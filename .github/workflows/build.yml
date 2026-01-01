@@ -108,12 +108,30 @@ jobs:
 
     - name: Install dependencies
       run: |
-        luarocks install lualogging
-        luarocks install lrexlib-pcre2
-        luarocks install luaposix
-        luarocks install luasocket
-        luarocks install busted
-        luarocks install busted-htest
+        until luarocks install lualogging
+        do
+          sleep 1
+        done
+        until luarocks install lrexlib-pcre2
+        do
+          sleep 1
+        done
+        until luarocks install luaposix
+        do
+          sleep 1
+        done
+        until luarocks install luasocket
+        do
+          sleep 1
+        done
+        until luarocks install busted
+        do
+          sleep 1
+        done
+        until luarocks install busted-htest
+        do
+          sleep 1
+        done
       
     - name: Run Benchmark
       run: |
