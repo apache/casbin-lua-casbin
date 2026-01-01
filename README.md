@@ -169,7 +169,16 @@ When implementing or using custom adapters (e.g., database adapters for PostgreS
 **For Adapter Developers:**
 - Adapters MUST raise errors using `error()` when operations fail (e.g., database connection failures, authentication errors).
 - Do NOT silently log errors without raising them, as this prevents users from catching errors with `pcall()`.
-- See the `FileAdapter` implementation for reference - it uses `assert()` which properly raises errors.
+- Example of correct error handling:
+```lua
+function MyAdapter:loadPolicy(model)
+    local conn, err = connect_to_database(self.config)
+    if not conn then
+        error("Database connection failed: " .. tostring(err))
+    end
+    -- ... continue with loading policy
+end
+```
 
 **For Adapter Users:**
 - You can catch errors from adapter operations using `pcall()`:

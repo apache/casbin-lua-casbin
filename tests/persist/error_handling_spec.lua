@@ -62,7 +62,9 @@ describe("Error handling tests", function ()
             local o = {}
             setmetatable(o, self)
             self.__index = self
-            o.isFiltered = true  -- Prevent automatic loadPolicy during init
+            -- Set isFiltered = true to prevent automatic loadPolicy during Enforcer initialization.
+            -- This allows us to test explicit loadPolicy() calls separately.
+            o.isFiltered = true
             return o
         end
 
@@ -100,6 +102,8 @@ describe("Error handling tests", function ()
             local o = {}
             setmetatable(o, self)
             self.__index = self
+            -- Set isFiltered = true to prevent automatic loadPolicy during Enforcer initialization.
+            -- This allows us to test loadFilteredPolicy() calls independently.
             o.isFiltered = true
             return o
         end
