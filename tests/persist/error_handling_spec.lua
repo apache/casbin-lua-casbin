@@ -37,13 +37,19 @@ describe("Error handling tests", function ()
         local model = path .. "/examples/rbac_model.conf"
         local a = FailingAdapter:new()
 
-        -- Test that the error can be caught with pcall
+        -- Test that the error can be caught with pcall and has the expected message
         local ok, err = pcall(function()
             local e = Enforcer:new(model, a)
         end)
 
         assert.is.False(ok)
         assert.is.truthy(string.find(err, "Database connection failed"))
+        
+        -- Also verify using assert.has_error pattern
+        assert.has_error(function()
+            local a2 = FailingAdapter:new()
+            local e2 = Enforcer:new(model, a2)
+        end, "Database connection failed")
     end)
 
     it("should catch errors from adapter during explicit loadPolicy call", function ()
@@ -70,13 +76,18 @@ describe("Error handling tests", function ()
         -- Create enforcer (won't load policy due to isFiltered=true)
         local e = Enforcer:new(model, a)
 
-        -- Now test that calling loadPolicy explicitly raises an error
+        -- Test that calling loadPolicy explicitly raises an error that can be caught
         local ok, err = pcall(function()
             e:loadPolicy()
         end)
 
         assert.is.False(ok)
         assert.is.truthy(string.find(err, "Database connection failed"))
+        
+        -- Also verify using assert.has_error pattern
+        assert.has_error(function()
+            e:loadPolicy()
+        end, "wrong password")
     end)
 
     it("should catch errors from adapter during loadFilteredPolicy call", function ()
@@ -108,5 +119,10 @@ describe("Error handling tests", function ()
 
         assert.is.False(ok)
         assert.is.truthy(string.find(err, "Database query failed"))
+        
+        -- Also verify using assert.has_error pattern
+        assert.has_error(function()
+            e:loadFilteredPolicy({})
+        end, "connection timeout")
     end)
 end)
