@@ -217,6 +217,22 @@ Authz middlewares for web frameworks: https://casbin.org/docs/middlewares
 
 https://casbin.org/docs/adopters
 
+## Troubleshooting
+
+### Errors not caught by pcall()
+
+**Problem:** When using an adapter (e.g., PostgreSQL adapter) with incorrect configuration (wrong password, etc.), errors appear in `error.log` but cannot be caught with `pcall()`.
+
+**Cause:** The adapter is logging errors (e.g., using `ngx.log()` in OpenResty) instead of raising them with `error()`.
+
+**Solution:**
+1. Verify the adapter is implementing the Casbin adapter interface correctly - it should raise errors using `error()` when operations fail
+2. If you're using a third-party adapter, report this issue to the adapter maintainer
+3. As a workaround, check logs for errors and handle them at the application level
+4. Consider switching to an adapter that properly raises errors
+
+For adapter developers: See the [Policy persistence](#policy-persistence) section for requirements on proper error handling.
+
 ## How to Contribute
 
 Please read the [contributing guide](CONTRIBUTING.md).
