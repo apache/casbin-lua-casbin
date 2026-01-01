@@ -24,6 +24,9 @@ setmetatable(FilteredAdapter, Adapter)
     * loadFilteredPolicy loads only policy rules that match the filter.
     * @param model the model.
     * @param filter the filter used to specify which type of policy should be loaded.
+    * @raises error if the policy cannot be loaded (e.g., database connection failure).
+    *         Implementations MUST raise an error using error() on failure so that
+    *         callers can catch it with pcall().
 ]]
 function FilteredAdapter:loadFilteredPolicy(model, filter)
     

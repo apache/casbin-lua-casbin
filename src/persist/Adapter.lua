@@ -52,6 +52,9 @@ end
         * loadPolicy loads all policy rules from the storage.
         *
         * @param model the model.
+        * @raises error if the policy cannot be loaded (e.g., database connection failure).
+        *         Implementations MUST raise an error using error() on failure so that
+        *         callers can catch it with pcall().
 ]]
 function Adapter:loadPolicy(model)
 
@@ -61,6 +64,9 @@ end
      * savePolicy saves all policy rules to the storage.
      *
      * @param model the model.
+     * @raises error if the policy cannot be saved (e.g., database connection failure).
+     *         Implementations MUST raise an error using error() on failure so that
+     *         callers can catch it with pcall().
 ]]
 function Adapter:savePolicy(model)
 
@@ -73,6 +79,9 @@ end
      * @param sec the section, "p" or "g".
      * @param ptype the policy type, "p", "p2", .. or "g", "g2", ..
      * @param rule the rule, like (sub, obj, act).
+     * @raises error if the policy cannot be added (e.g., database connection failure).
+     *         Implementations MUST raise an error using error() on failure so that
+     *         callers can catch it with pcall().
 ]]
 function Adapter:addPolicy(sec, ptype, rule)
 
@@ -85,6 +94,9 @@ end
      * @param sec the section, "p" or "g".
      * @param ptype the policy type, "p", "p2", .. or "g", "g2", ..
      * @param rule the rule, like (sub, obj, act).
+     * @raises error if the policy cannot be removed (e.g., database connection failure).
+     *         Implementations MUST raise an error using error() on failure so that
+     *         callers can catch it with pcall().
 ]]
 function Adapter:removePolicy(sec, ptype, rule)
 
@@ -99,6 +111,9 @@ end
      * @param fieldIndex the policy rule's start index to be matched.
      * @param fieldValues the field values to be matched, value ""
      *                    means not to match this field.
+     * @raises error if the policy cannot be removed (e.g., database connection failure).
+     *         Implementations MUST raise an error using error() on failure so that
+     *         callers can catch it with pcall().
 ]]
 function Adapter:removeFilteredPolicy(sec, ptype, fieldIndex, fieldValues)
 
