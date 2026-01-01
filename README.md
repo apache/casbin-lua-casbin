@@ -162,6 +162,29 @@ We also provide a [web-based UI](https://casbin.org/docs/admin-portal) for model
 
 https://casbin.org/docs/adapters
 
+### Error Handling for Adapters
+
+When implementing or using custom adapters (e.g., database adapters for PostgreSQL, MySQL, etc.), it's important to ensure proper error handling:
+
+**For Adapter Developers:**
+- Adapters MUST raise errors using `error()` when operations fail (e.g., database connection failures, authentication errors).
+- Do NOT silently log errors without raising them, as this prevents users from catching errors with `pcall()`.
+- See the `FileAdapter` implementation for reference - it uses `assert()` which properly raises errors.
+
+**For Adapter Users:**
+- You can catch errors from adapter operations using `pcall()`:
+```lua
+local ok, err = pcall(function()
+    local adapter = MyAdapter:new(config)
+    local enforcer = Enforcer:new("model.conf", adapter)
+end)
+
+if not ok then
+    print("Error loading policy: " .. tostring(err))
+end
+```
+- If errors appear in logs but `pcall()` doesn't catch them, the adapter may not be raising errors properly. Contact the adapter maintainer to fix this.
+
 ## Policy consistence between multiple nodes
 
 https://casbin.org/docs/watchers
