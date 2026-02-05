@@ -446,7 +446,8 @@ function CoreEnforcer:enforceEx(...)
                 res, err = luaxp.evaluate(tExpString, context)
             end
             if err then
-                error("evaluation error: " .. err.message)
+                local errMsg = type(err) == "table" and err.message or tostring(err)
+                error("evaluation error: " .. errMsg)
             end
 
             local c = true
@@ -491,7 +492,8 @@ function CoreEnforcer:enforceEx(...)
             
         local res, err = luaxp.run(compiledExpression, context)
         if err then
-            error("evaluation error: " .. err.message)
+            local errMsg = type(err) == "table" and err.message or tostring(err)
+            error("evaluation error: " .. errMsg)
         end
 
         if res then

@@ -94,6 +94,21 @@ describe("Enforcer tests", function ()
         assert.is.True(e:enforce("alice", "/alice_data2/123/using/456", "GET"))
     end)
 
+    it("keyMatch4 test", function ()
+        local model  = path .. "/examples/keymatch4_model.conf"
+        local policy  = path .. "/examples/keymatch4_policy.csv"
+
+        local e = Enforcer:new(model, policy)
+        -- Test alice with matching IDs (same placeholder value)
+        assert.is.True(e:enforce("alice", "/parent/123/child/123", "GET"))
+        assert.is.True(e:enforce("alice", "/parent/456/child/456", "POST"))
+        -- Test alice with non-matching IDs (different placeholder values)
+        assert.is.False(e:enforce("alice", "/parent/123/child/456", "GET"))
+        -- Test bob with different IDs (different placeholders, should work)
+        assert.is.True(e:enforce("bob", "/parent/123/child/456", "GET"))
+        assert.is.True(e:enforce("bob", "/parent/789/child/012", "POST"))
+    end)
+
     it("priority test", function ()
         local model  = path .. "/examples/priority_model.conf"
         local policy  = path .. "/examples/priority_policy.csv"
