@@ -12,9 +12,6 @@
 --See the License for the specific language governing permissions and
 --limitations under the License.
 
-local Logging = require "logging"
-local fileLogging = require "logging.file"
-
 -- The logging module for logging to console or any file
 local Log = {
     enabled = true
@@ -23,6 +20,8 @@ Log.__index = Log
 
 -- returns logger function for logging to console
 function Log.getLogger()
+    -- Lazy load to avoid global variable issues in OpenResty
+    local Logging = require "logging"
     local o = {}
     setmetatable(o, Log)
     o.logger = Logging.new(function(self, level, message)
@@ -37,6 +36,8 @@ function Log:getFileLogger(filePath)
     if not filePath then
         error("no filePath for logger provided")
     end
+    -- Lazy load to avoid global variable issues in OpenResty
+    local fileLogging = require "logging.file"
     local o = {}
     self.__index = self
     setmetatable(o, self)
