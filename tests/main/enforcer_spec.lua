@@ -516,6 +516,54 @@ describe("Enforcer tests", function ()
         assert.is.False(e:enforce("bogus", "data2", "write")) -- Non-existent subject
     end)
 
+    it("multiple newEnforcerFromText with distinct definitions", function ()
+        local model1 = [[
+            [request_definition]
+            r = path, method
+
+            [policy_definition]
+            p = path, method
+
+            [policy_effect]
+            e = some(where (p.eft == allow))
+
+            [matchers]
+            m = r.path == p.path && r.method == p.method
+        ]]
+
+        local policy1 = [[
+            p, /alpha, GET
+        ]]
+
+        local model2 = [[
+            [request_definition]
+            r = user, path, method
+
+            [policy_definition]
+            p = user, path, method
+
+            [policy_effect]
+            e = some(where (p.eft == allow))
+
+            [matchers]
+            m = r.user == p.user && r.path == p.path && r.method == p.method
+        ]]
+
+        local policy2 = [[
+            p, alice, /alpha, GET
+        ]]
+
+        local e2 = Enforcer:newEnforcerFromText(model2, policy2)
+        assert.is.True(e2:enforce("alice", "/alpha", "GET"))
+
+        local e1 = Enforcer:newEnforcerFromText(model1, policy1)
+        assert.is.True(e1:enforce("/alpha", "GET"))
+
+        local ok, res = pcall(e2.enforce, e2, "alice", "/alpha", "GET")
+        assert.is.True(ok)
+        assert.is.True(res)
+    end)
+
     
     it("regexMatch test", function ()
 

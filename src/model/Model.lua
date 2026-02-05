@@ -23,8 +23,8 @@ function Model:new()
     local o = {}
     setmetatable(o, self)
     self.__index = self
-    self.model = {}
-    self.sectionNameMap = {
+    o.model = {}
+    o.sectionNameMap = {
         ["r"] = "request_definition",
         ["p"] = "policy_definition",
         ["g"] = "role_definition",
@@ -32,11 +32,11 @@ function Model:new()
         ["m"] = "matchers"
     }
 
-    self.requiredSections = {"r", "p", "e", "m"} -- Minimal required sections for a model to be valid
-    self.modCount = 0   -- used by CoreEnforcer to detect changes to Model
+    o.requiredSections = {"r", "p", "e", "m"} -- Minimal required sections for a model to be valid
+    o.modCount = 0   -- used by CoreEnforcer to detect changes to Model
 
     -- PolicyOperations: [key] = POLICY_ADD/POLICY_REMOVE and value = string(key)
-    self.PolicyOperations = {
+    o.PolicyOperations = {
         POLICY_ADD = "POLICY_ADD",
         POLICY_REMOVE = "POLICY_REMOVE"
     }
