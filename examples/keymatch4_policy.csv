@@ -1,4 +1,4 @@
-p, alice, /parent/{id}/child/{id}, (GET)|(POST)
-p, bob, /parent/{id}/child/{another_id}, (GET)|(POST)
+p, alice, /parent/{id}/child/{id}, GET|POST
+p, bob, /parent/{id}/child/{another_id}, GET|POST
 g, alice, alice
 g, bob, bob
