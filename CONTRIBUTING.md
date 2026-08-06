@@ -15,7 +15,7 @@ This project adheres to the [Contributor Covenant 1.2.](https://www.contributor-
 
 Reporting issues are a great way to contribute to the project. We are perpetually grateful about a well-written, thorough bug report.
 
-Before raising a new issue, check our [issue list](https://github.com/casbin/lua-casbin/issues) to determine if it already contains the problem that you are facing.
+Before raising a new issue, check our [issue list](https://github.com/apache/casbin-lua-casbin/issues) to determine if it already contains the problem that you are facing.
 
 A good bug report shouldn't leave others needing to chase you for more information. Please be as detailed as possible. The following questions might serve as a template for writing a detailed report:
 

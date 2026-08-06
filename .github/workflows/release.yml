@@ -20,7 +20,7 @@ env:
 jobs:
   release:
     name: GitHub Release
-    if: github.repository == 'casbin/lua-casbin'
+    if: github.repository == 'apache/casbin-lua-casbin'
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.vars.outputs.version }}

@@ -1,6 +1,6 @@
 # lua-casbin
-[![GitHub Action](https://github.com/casbin/lua-casbin/workflows/build/badge.svg?branch=master)](https://github.com/casbin/lua-casbin/actions)
-[![Coverage Status](https://coveralls.io/repos/github/casbin/lua-casbin/badge.svg?branch=master)](https://coveralls.io/github/casbin/lua-casbin?branch=master)
+[![GitHub Action](https://github.com/apache/casbin-lua-casbin/workflows/build/badge.svg?branch=master)](https://github.com/apache/casbin-lua-casbin/actions)
+[![Coverage Status](https://coveralls.io/repos/github/apache/casbin-lua-casbin/badge.svg?branch=master)](https://coveralls.io/github/apache/casbin-lua-casbin?branch=master)
 [![Discord](https://img.shields.io/discord/1022748306096537660?logo=discord&label=discord&color=5865F2)](https://discord.gg/S5UjpzGZjN)
 
 [![LuaRocks](https://img.shields.io/luarocks/v/hsluoyz/casbin.svg)](https://luarocks.org/modules/hsluoyz/casbin)
@@ -44,7 +44,7 @@ sudo luarocks install casbin
 local Enforcer = require("casbin")
 local e = Enforcer:new("path/to/model.conf", "path/to/policy.csv")
 ```
-Note: you can also initialize an enforcer with policy in DB instead of file, see [Policy-persistence](https://github.com/casbin/lua-casbin#policy-persistence) section for details.
+Note: you can also initialize an enforcer with policy in DB instead of file, see [Policy-persistence](https://github.com/apache/casbin-lua-casbin#policy-persistence) section for details.
 
 2. Add an enforcement hook into your code right before the access happens:
 ```lua
@@ -63,7 +63,7 @@ end
 ```lua
 local roles = e:GetImplicitRolesForUser(sub)
 ```
-See [Policy management APIs](https://github.com/casbin/lua-casbin#policy-management) for more usage.
+See [Policy management APIs](https://github.com/apache/casbin-lua-casbin#policy-management) for more usage.
 
 
 ## Supported models
@@ -254,7 +254,7 @@ Please read the [contributing guide](CONTRIBUTING.md).
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=casbin/lua-casbin&type=Date)](https://star-history.com/#casbin/lua-casbin&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=apache/casbin-lua-casbin&type=Date)](https://star-history.com/#apache/casbin-lua-casbin&Date)
 
 ## License
 
@@ -263,5 +263,5 @@ This project is licensed under the [Apache 2.0 license](LICENSE).
 ## Contact
 
 If you have any issues or feature requests, please contact us. PR is welcomed.
-- https://github.com/casbin/lua-casbin/issues
+- https://github.com/apache/casbin-lua-casbin/issues
 - https://discord.gg/S5UjpzGZjN
