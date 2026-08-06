@@ -1,7 +1,6 @@
 # lua-casbin
 [![GitHub Action](https://github.com/casbin/lua-casbin/workflows/build/badge.svg?branch=master)](https://github.com/casbin/lua-casbin/actions)
 [![Coverage Status](https://coveralls.io/repos/github/casbin/lua-casbin/badge.svg?branch=master)](https://coveralls.io/github/casbin/lua-casbin?branch=master)
-[![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 [![Discord](https://img.shields.io/discord/1022748306096537660?logo=discord&label=discord&color=5865F2)](https://discord.gg/S5UjpzGZjN)
 
 [![LuaRocks](https://img.shields.io/luarocks/v/hsluoyz/casbin.svg)](https://luarocks.org/modules/hsluoyz/casbin)

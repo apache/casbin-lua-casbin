@@ -1,30 +1,93 @@
 name: Release
 
+# Releases are cut manually by pushing a git tag (Apache releases must be voted on,
+# so nothing is published automatically on merge/commit).
+#
+#   git tag v1.4.0-rc1 && git push origin v1.4.0-rc1   -> GitHub pre-release (for the Apache vote)
+#   git tag v1.4.0     && git push origin v1.4.0       -> GitHub release + LuaRocks upload
 on:
   push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  # Base name of the Apache source artifact: apache-<ARTIFACT_ID>-<version>-incubating-src.tar.gz
+  ARTIFACT_ID: casbin-lua
 
 jobs:
-  semantic-release:
+  release:
+    name: GitHub Release
+    if: github.repository == 'casbin/lua-casbin'
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.vars.outputs.version }}
+      prerelease: ${{ steps.vars.outputs.prerelease }}
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Run semantic-release
-        if: github.repository == 'casbin/lua-casbin' && github.event_name == 'push'
+      - name: Resolve version from tag
+        id: vars
         run: |
-          export PATH="$(yarn global bin):$PATH"
-          yarn global add semantic-release@19.0.5
-          semantic-release
-          sleep 10
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          # A "-rc<N>" suffix marks an Apache release candidate -> GitHub pre-release only.
+          if [[ "${VERSION}" == *-rc* ]]; then
+            PRERELEASE=true
+          else
+            PRERELEASE=false
+          fi
+          # The source artifact always carries the final version, never the rc suffix, so that
+          # the exact bits that were voted on can be promoted unchanged.
+          BASE_VERSION="${VERSION%%-rc*}"
+          {
+            echo "tag=${TAG}"
+            echo "version=${BASE_VERSION}"
+            echo "prerelease=${PRERELEASE}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build Apache source package
+        id: package
+        run: |
+          set -euo pipefail
+          NAME="apache-${ARTIFACT_ID}-${{ steps.vars.outputs.version }}-incubating-src"
+          mkdir -p dist
+          # git archive ships exactly what is tracked at the tag, with a single top-level
+          # directory named after the tarball, and no .git metadata.
+          git archive --format=tar.gz --prefix="${NAME}/" -o "dist/${NAME}.tar.gz" HEAD
+          (cd dist && sha512sum "${NAME}.tar.gz" > "${NAME}.tar.gz.sha512")
+          ls -l dist
+
+      - name: Create GitHub release
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.vars.outputs.prerelease }}" = "true" ]; then
+            FLAG="--prerelease"
+          else
+            FLAG="--latest"
+          fi
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            ${FLAG} \
+            dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Lua ${{ matrix.lua-version }}
+  luarocks:
+    name: Publish to LuaRocks
+    needs: release
+    if: needs.release.outputs.prerelease == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Lua
         uses: leafo/gh-actions-lua@v10.0.0
         with:
           luaVersion: 5.1
@@ -33,19 +96,14 @@ jobs:
         uses: leafo/gh-actions-luarocks@v4.0.0
 
       - name: Set up CJSON
-        run: |
-          luarocks install lua-cjson
-      
-      - name: Upload
-        if: github.repository == 'casbin/lua-casbin' && github.event_name == 'push'
-        run: |
-          rl=$(curl -fsSLI -o /dev/null -w %{url_effective} https://github.com/casbin/lua-casbin/releases/latest)
-          rv=${rl:51}
-          cp ./.github/luarocks-template.rockspec ./casbin-${rv}-1.rockspec
-          sed -i "2iversion = \"${rv}-1\"" ./casbin-${rv}-1.rockspec
-          sed -i "5i\ \ \ tag = \"v${rv}\"" ./casbin-${rv}-1.rockspec
-          cat casbin-${rv}-1.rockspec
-          luarocks upload casbin-${rv}-1.rockspec --force --skip-pack --api-key=${{ secrets.LUAROCKS_API_KEY }}
+        run: luarocks install lua-cjson
 
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload rockspec
+        run: |
+          set -euo pipefail
+          rv="${{ needs.release.outputs.version }}"
+          cp ./.github/luarocks-template.rockspec "./casbin-${rv}-1.rockspec"
+          sed -i "2iversion = \"${rv}-1\"" "./casbin-${rv}-1.rockspec"
+          sed -i "5i\ \ \ tag = \"v${rv}\"" "./casbin-${rv}-1.rockspec"
+          cat "casbin-${rv}-1.rockspec"
+          luarocks upload "casbin-${rv}-1.rockspec" --force --skip-pack --api-key=${{ secrets.LUAROCKS_API_KEY }}
