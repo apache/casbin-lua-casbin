@@ -309,10 +309,25 @@ end
 --[[
      * isFiltered returns true if the loaded policy has been filtered.
      *
+     * An adapter may expose isFiltered either as a flag, like the file
+     * FilteredAdapter does, or as the method the FilteredAdapter interface
+     * declares. Reading it as a flag alone made every adapter of the second
+     * kind look permanently filtered, because a method is a truthy value, and
+     * the enforcer then never loaded its policy.
+     *
      * @return if the loaded policy has been filtered.
 ]]
 function CoreEnforcer:isFiltered()
-    return self.adapter.isFiltered
+    if not self.adapter then
+        return false
+    end
+
+    local filtered = self.adapter.isFiltered
+    if type(filtered) == "function" then
+        filtered = filtered(self.adapter)
+    end
+
+    return filtered and true or false
 end
 
 --[[
