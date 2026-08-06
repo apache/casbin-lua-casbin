@@ -12,13 +12,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        lua-version: ["5.1", "5.2", "5.3", "5.4", "5.5", "luajit-openresty"]
+        lua-version: ["5.1", "5.2", "5.3", "5.4", "luajit-openresty"]
 
     name: Lua ${{ matrix.lua-version }}
-
-    # Lua 5.5 is not released long enough for all the rocks we depend on, so it
-    # is reported but not allowed to fail the build yet.
-    continue-on-error: ${{ matrix.lua-version == '5.5' }}
 
     steps:
     - name: Checkout
