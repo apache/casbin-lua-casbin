@@ -69,8 +69,8 @@ function FilteredAdapter:loadFilteredPolicyFile(model, filter)
     local f = assert(io.open(self.filePath,"r"))
 
     if f then
-        for line in f:lines() do
-            line = Util.trim(line)
+        for rawLine in f:lines() do
+            local line = Util.trim(rawLine)
             if self:filterLine(line, filter) == false then
                 Adapter.loadPolicyLine(line, model)
             end

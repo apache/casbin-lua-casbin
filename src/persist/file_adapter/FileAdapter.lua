@@ -44,8 +44,8 @@ function FileAdapter:loadPolicy(model)
     local f = assert(io.open(self.filePath,"r"))
 
     if f then
-        for line in f:lines() do
-            line = Util.trim(line)
+        for rawLine in f:lines() do
+            local line = Util.trim(rawLine)
             Adapter.loadPolicyLine(line, model)
         end
     end
