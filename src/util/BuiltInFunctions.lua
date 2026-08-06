@@ -144,10 +144,18 @@ function BuiltInFunctions.keyMatch4(key1, key2)
         return "([^/]+)"
     end
     key2=string.gsub(key2,"{([^/]+)}",repl)
-    if string.match(key1, key2)==nil then
+    key2="^" .. key2 .. "$"
+
+    -- Without any {token}, the pattern has no captures, so string.match would
+    -- return the whole match instead of a (possibly empty) list of values.
+    if #tokens==0 then
+        return string.match(key1, key2)~=nil
+    end
+
+    local matches={string.match(key1, key2)}
+    if matches[1]==nil then
         return false
     end
-    local matches={string.match(key1, key2)}
     if #tokens~= #matches then
         error("KeyMatch4: number of tokens is not equal to number of values")
     end

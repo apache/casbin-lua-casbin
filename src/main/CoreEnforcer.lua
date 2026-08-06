@@ -26,6 +26,24 @@ local Util = require("src.util.Util")
 local luaxp = require("modules.luaxp")
 
 --[[
+     * describeEvalError turns a luaxp error into a readable string.
+     * luaxp reports its own compile/evaluation errors as a table with a
+     * "message" field, but an error raised inside a matcher function (a
+     * built-in like keyMatch4, or a user-registered one) is passed through
+     * as a plain string. Reading .message unconditionally hid the real
+     * cause behind "attempt to concatenate field 'message' (a nil value)".
+     *
+     * @param err the second value returned by luaxp.run/luaxp.evaluate.
+     * @return a string describing the error.
+]]
+local function describeEvalError(err)
+    if type(err) == "table" and err.message then
+        return tostring(err.message)
+    end
+    return tostring(err)
+end
+
+--[[
      * checkAdapterResult raises a Lua error when an adapter reports a failure
      * through the "return nil/false, err" convention instead of raising it.
      * Without this, storage errors (e.g. a database that is down) would be
@@ -463,7 +481,7 @@ function CoreEnforcer:enforceEx(...)
                 res, err = luaxp.evaluate(tExpString, context)
             end
             if err then
-                error("evaluation error: " .. err.message)
+                error("evaluation error: " .. describeEvalError(err))
             end
 
             local c = true
@@ -508,7 +526,7 @@ function CoreEnforcer:enforceEx(...)
             
         local res, err = luaxp.run(compiledExpression, context)
         if err then
-            error("evaluation error: " .. err.message)
+            error("evaluation error: " .. describeEvalError(err))
         end
 
         if res then

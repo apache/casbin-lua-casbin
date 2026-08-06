@@ -94,6 +94,18 @@ describe("Enforcer tests", function ()
         assert.is.True(e:enforce("alice", "/alice_data2/123/using/456", "GET"))
     end)
 
+    it("rbac with keyMatch4 test", function ()
+        local model  = path .. "/examples/rbac_with_keymatch4_model.conf"
+        local policy  = path .. "/examples/rbac_policy.csv"
+
+        local e = Enforcer:new(model, policy)
+        assert.is.True(e:enforce("alice", "data1", "read"))
+        assert.is.False(e:enforce("alice", "data1", "write"))
+        assert.is.True(e:enforce("alice", "data2", "write"))
+        assert.is.False(e:enforce("bob", "data1", "read"))
+        assert.is.True(e:enforce("bob", "data2", "write"))
+    end)
+
     it("priority test", function ()
         local model  = path .. "/examples/priority_model.conf"
         local policy  = path .. "/examples/priority_policy.csv"

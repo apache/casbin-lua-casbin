@@ -170,6 +170,17 @@ describe("BuiltInFunctions tests", function ()
         assert.is.False(BuiltInFunctions.keyMatch4("/parent/123/child/456", "/parent/{id}/child/{id}/book/{id}"))
 
         assert.is.False(BuiltInFunctions.keyMatch4("/parent/123/child/123", "/parent/{i/d}/child/{i/d}"))
+
+        -- Patterns without any {token} must still work instead of raising
+        -- "number of tokens is not equal to number of values".
+        assert.is.True(BuiltInFunctions.keyMatch4("data1", "data1"))
+        assert.is.False(BuiltInFunctions.keyMatch4("data1", "data2"))
+        assert.is.True(BuiltInFunctions.keyMatch4("/foo/bar", "/foo/*"))
+        assert.is.False(BuiltInFunctions.keyMatch4("/bar/foo", "/foo/*"))
+
+        -- The pattern is anchored, so it must match the whole key.
+        assert.is.False(BuiltInFunctions.keyMatch4("/parent/123/child/123/extra", "/parent/{id}/child/{id}"))
+        assert.is.False(BuiltInFunctions.keyMatch4("data11", "data1"))
     end)
 
     it("regexMatch tests", function ()
