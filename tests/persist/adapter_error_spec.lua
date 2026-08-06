@@ -14,6 +14,7 @@
 
 local Adapter = require("src.persist.Adapter")
 local Enforcer = require("src.main.Enforcer")
+local FilteredAdapter = require("src.persist.file_adapter.FilteredAdapter")
 
 local path = os.getenv("PWD") or io.popen("cd"):read()
 local model_path = path .. "/examples/basic_model.conf"
@@ -98,6 +99,34 @@ describe("adapter error tests", function ()
     -- adapters that return nothing at all (like FileAdapter) keep working
     it("test file adapter still loads", function ()
         local e = Enforcer:new(model_path, policy_path)
+
+        assert.is.True(e:enforce("alice", "data1", "read"))
+    end)
+
+    -- FilteredAdapter only delegates, so it must not swallow the wrapped
+    -- adapter's failure on its way back to the enforcer.
+    it("test filtered adapter propagates the wrapped adapter error", function ()
+        local fa = FilteredAdapter:new(policy_path)
+        fa.adapter = FailingAdapter({loadPolicy = true, savePolicy = true})
+
+        local ok, err = fa:loadPolicy({})
+        assert.is.False(ok)
+        assert.are.equals("connection to the database failed", err)
+
+        ok, err = fa:loadFilteredPolicy({}, nil)
+        assert.is.False(ok)
+        assert.are.equals("connection to the database failed", err)
+
+        ok, err = fa:savePolicy({})
+        assert.is.False(ok)
+        assert.are.equals("the database is read only", err)
+    end)
+
+    it("test filtered adapter reports success of the wrapped adapter", function ()
+        local fa = FilteredAdapter:new(policy_path)
+        local e = Enforcer:new(model_path, fa)
+
+        e:loadFilteredPolicy(nil)
 
         assert.is.True(e:enforce("alice", "data1", "read"))
     end)

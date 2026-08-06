@@ -27,6 +27,15 @@ local FilteredAdapter = {
 }
 setmetatable(FilteredAdapter, Adapter)
 
+--[[
+    * hasFailed tells whether a wrapped adapter reported a failure through the
+    * "return false/nil, err" convention. FilteredAdapter only delegates, so it
+    * must hand that failure back to the enforcer instead of dropping it.
+]]
+local function hasFailed(ok, err)
+    return ok == false or (ok == nil and err ~= nil)
+end
+
 function FilteredAdapter:new(filePath)
     local o = {}
     setmetatable(o, self)
@@ -49,9 +58,12 @@ function FilteredAdapter:loadFilteredPolicy(model, filter)
     end
 
     if filter == nil then
-        self.adapter:loadPolicy(model)
+        local ok, err = self.adapter:loadPolicy(model)
+        if hasFailed(ok, err) then
+            return false, err
+        end
         self.isFiltered = false
-        return
+        return true
     end
 
     if not filter.G or not filter.P then
@@ -60,6 +72,8 @@ function FilteredAdapter:loadFilteredPolicy(model, filter)
         self:loadFilteredPolicyFile(model, filter)
         self.isFiltered = true
     end
+
+    return true
 end
 
 --[[
@@ -140,36 +154,41 @@ end
     * loadPolicy loads all policy rules from the storage.
 ]]
 function FilteredAdapter:loadPolicy(model)
-    self.adapter:loadPolicy(model)
+    local ok, err = self.adapter:loadPolicy(model)
+    if hasFailed(ok, err) then
+        return false, err
+    end
+
     self.isFiltered = false
+    return true
 end
 
 --[[
     * savePolicy saves all policy rules to the storage.
 ]]
 function FilteredAdapter:savePolicy(model)
-    self.adapter:savePolicy(model)
+    return self.adapter:savePolicy(model)
 end
 
 --[[
     * addPolicy adds a policy rule to the storage.
 ]]
 function FilteredAdapter:addPolicy(sec, ptype, rule)
-    self.adapter:addPolicy(sec, ptype, rule)
+    return self.adapter:addPolicy(sec, ptype, rule)
 end
 
 --[[
     * removePolicy removes a policy rule from the storage.
 ]]
 function FilteredAdapter:removePolicy(sec, ptype, rule)
-    self.adapter:removePolicy(sec, ptype, rule)
+    return self.adapter:removePolicy(sec, ptype, rule)
 end
 
 --[[
     * removeFilteredPolicy removes policy rules that match the filter from the storage.
 ]]
-function FilteredAdapter:removeFilteredPolicyPolicy(sec, ptype, fieldIndex, fieldValues)
-    self.adapter:removeFilteredPolicyPolicy(sec, ptype, fieldIndex, fieldValues)
+function FilteredAdapter:removeFilteredPolicy(sec, ptype, fieldIndex, fieldValues)
+    return self.adapter:removeFilteredPolicy(sec, ptype, fieldIndex, fieldValues)
 end
 
 return FilteredAdapter
