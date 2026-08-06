@@ -41,6 +41,7 @@ build = {
       ["src.persist.file_adapter.FileAdapter"] = "src/persist/file_adapter/FileAdapter.lua",
       ["src.persist.file_adapter.Filter"] = "src/persist/file_adapter/Filter.lua",
       ["src.persist.file_adapter.FilteredAdapter"] = "src/persist/file_adapter/FilteredAdapter.lua",
+      ["src.persist.database_adapter.DatabaseAdapter"] = "src/persist/database_adapter/DatabaseAdapter.lua",
       ["src.persist.Watcher"] = "src/persist/Watcher.lua",
       ["src.persist.WatcherEx"] = "src/persist/WatcherEx.lua",
       ["src.persist.WatcherUpdatable"] = "src/persist/WatcherUpdatable.lua",

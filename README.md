@@ -161,6 +161,61 @@ We also provide a [web-based UI](https://casbin.org/docs/admin-portal) for model
 
 https://casbin.org/docs/adapters
 
+Besides the file adapter, lua-casbin ships a SQL adapter that keeps the policy
+in the usual `casbin_rule` table (`ptype, v0 .. v5`), the same layout the Casbin
+adapters of the other languages use. It does not depend on a database library
+of its own: you hand it the client you already have, any object with a
+`query(sql)` method. That is exactly the shape of the OpenResty clients, so it
+works inside APISIX out of the box.
+
+With [lua-resty-mysql](https://github.com/openresty/lua-resty-mysql):
+```lua
+local Enforcer = require("casbin")
+local DatabaseAdapter = require("src.persist.database_adapter.DatabaseAdapter")
+
+local db = require("resty.mysql"):new()
+db:connect({host = "127.0.0.1", port = 3306, database = "casbin",
+            user = "casbin", password = "casbin"})
+
+local a = DatabaseAdapter:new(db, {dialect = "mysql", escapeLiteral = ngx.quote_sql_str})
+a:createTable() -- optional, if the table is not managed elsewhere
+
+local e = Enforcer:new("path/to/model.conf", a)
+```
+
+With [pgmoon](https://github.com/leafo/pgmoon):
+```lua
+local pg = require("pgmoon").new({host = "127.0.0.1", port = 5432,
+                                  database = "casbin", user = "casbin"})
+pg:connect()
+
+local a = DatabaseAdapter:new(pg, {
+    dialect = "postgres",
+    escapeLiteral = function(v) return pg:escape_literal(v) end,
+})
+
+local e = Enforcer:new("path/to/model.conf", a)
+```
+
+`DatabaseAdapter:new(driver, options)` accepts:
+
+| option | default | meaning |
+| --- | --- | --- |
+| `tableName` | `"casbin_rule"` | the policy table |
+| `dialect` | `"mysql"` | `"mysql"`, `"postgres"` or `"sqlite"`; selects the default quoting and the DDL of `createTable()` |
+| `escapeLiteral` | per dialect | the function quoting a value; pass the one of your driver when you can, it is always the most accurate |
+| `orderBy` | `"id"` | column keeping the rule order stable across reloads; set it to `false` if your table has no such column |
+| `filtered` | `false` | set it to `true` to skip the full load on creation and call `e:loadFilteredPolicy(filter)` yourself |
+
+Loading only a slice of a large table:
+```lua
+local a = DatabaseAdapter:new(db, {dialect = "mysql", filtered = true})
+local e = Enforcer:new("path/to/model.conf", a)
+
+-- only the rules whose first value is "alice"
+e:loadFilteredPolicy({P = {"alice"}, G = {"alice"}})
+```
+
 ## Policy consistence between multiple nodes
 
 https://casbin.org/docs/watchers
