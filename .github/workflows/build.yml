@@ -12,21 +12,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        lua-version: ["5.1", "5.2", "5.3", "5.4", "luajit-openresty"]
+        lua-version: ["5.1", "5.2", "5.3", "5.4", "5.5", "luajit-openresty"]
 
     name: Lua ${{ matrix.lua-version }}
+
+    # Lua 5.5 is not released long enough for all the rocks we depend on, so it
+    # is reported but not allowed to fail the build yet.
+    continue-on-error: ${{ matrix.lua-version == '5.5' }}
 
     steps:
     - name: Checkout
       uses: actions/checkout@v2
 
     - name: Set up Lua ${{ matrix.lua-version }}
-      uses: leafo/gh-actions-lua@v10.0.0
+      uses: leafo/gh-actions-lua@v13
       with:
         luaVersion: ${{ matrix.lua-version }}
 
     - name: Set up luarocks
-      uses: leafo/gh-actions-luarocks@v4.0.0
+      uses: leafo/gh-actions-luarocks@v6
 
     - name: Install PCRE
       run: |
