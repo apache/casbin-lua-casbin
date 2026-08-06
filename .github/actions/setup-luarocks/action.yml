@@ -1,0 +1,53 @@
+name: "Set up LuaRocks"
+description: >
+  Build and install LuaRocks against the Lua tree produced by leafo/gh-actions-lua.
+  This replaces leafo/gh-actions-luarocks, which the Apache enterprise action
+  allowlist does not permit. Actions living in this repository are always allowed,
+  so the same steps are kept here instead.
+
+inputs:
+  luaRocksVersion:
+    description: "The version of LuaRocks to build, as published on https://luarocks.org/releases/"
+    required: false
+    default: "3.13.0"
+  withLuaPath:
+    description: "Existing Lua installation to build against (./configure --with-lua). Defaults to the .lua directory created by leafo/gh-actions-lua."
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Build and install LuaRocks
+      shell: bash
+      env:
+        LUAROCKS_VERSION: ${{ inputs.luaRocksVersion }}
+        WITH_LUA_PATH: ${{ inputs.withLuaPath }}
+      run: |
+        set -euo pipefail
+
+        lua_dir="${WITH_LUA_PATH:-}"
+        if [ -z "$lua_dir" ]; then
+          # Default install path used by leafo/gh-actions-lua.
+          lua_dir="${GITHUB_WORKSPACE}/.lua"
+        fi
+
+        build_dir="${RUNNER_TEMP}/.build-luarocks"
+        install_dir="${GITHUB_WORKSPACE}/.luarocks"
+
+        mkdir -p "$build_dir"
+        curl -fsSL "https://luarocks.org/releases/luarocks-${LUAROCKS_VERSION}.tar.gz" \
+          | tar -xz -C "$build_dir"
+
+        cd "${build_dir}/luarocks-${LUAROCKS_VERSION}"
+        ./configure --with-lua="$lua_dir" --prefix="$install_dir"
+        make
+        make install
+
+        # Expose luarocks and the rocks tree to the following steps.
+        luarocks="${install_dir}/bin/luarocks"
+        "$luarocks" path --lr-bin >> "$GITHUB_PATH"
+        {
+          echo "LUA_PATH=;;$("$luarocks" path --lr-path)"
+          echo "LUA_CPATH=;;$("$luarocks" path --lr-cpath)"
+        } >> "$GITHUB_ENV"

@@ -30,7 +30,7 @@ jobs:
         luaVersion: ${{ matrix.lua-version }}
 
     - name: Set up luarocks
-      uses: leafo/gh-actions-luarocks@v6
+      uses: ./.github/actions/setup-luarocks
 
     - name: Install PCRE
       run: |
@@ -103,7 +103,7 @@ jobs:
         luaVersion: "luajit-openresty"
 
     - name: Set up luarocks
-      uses: leafo/gh-actions-luarocks@v4.0.0
+      uses: ./.github/actions/setup-luarocks
 
     - name: Install PCRE
       run: |
