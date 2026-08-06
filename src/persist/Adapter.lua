@@ -51,6 +51,11 @@ end
 --[[
         * loadPolicy loads all policy rules from the storage.
         *
+        * An adapter reports a failure either by raising an error with error()
+        * or by returning false plus an error message. Casbin turns the latter
+        * into an error() as well, so callers can always catch storage failures
+        * with pcall() instead of silently getting an empty policy.
+        *
         * @param model the model.
 ]]
 function Adapter:loadPolicy(model)

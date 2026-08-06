@@ -25,6 +25,23 @@ local Util = require("src.util.Util")
 
 local luaxp = require("modules.luaxp")
 
+--[[
+     * checkAdapterResult raises a Lua error when an adapter reports a failure
+     * through the "return nil/false, err" convention instead of raising it.
+     * Without this, storage errors (e.g. a database that is down) would be
+     * silently ignored and the enforcer would keep running on an empty policy.
+     *
+     * @param op the name of the adapter operation, used in the error message.
+     * @param ok the first value returned by the adapter.
+     * @param err the second value returned by the adapter.
+]]
+local function checkAdapterResult(op, ok, err)
+    -- Adapters that return nothing (like FileAdapter) are considered successful.
+    if ok == false or (ok == nil and err ~= nil) then
+        error(op .. " failed: " .. tostring(err or "unknown error"))
+    end
+end
+
 local CoreEnforcer = {
     enabled = false,
     autoSave = false,
@@ -244,7 +261,7 @@ end
 ]]
 function CoreEnforcer:loadPolicy()
     self.model:clearPolicy()
-    self.adapter:loadPolicy(self.model)
+    checkAdapterResult("loadPolicy", self.adapter:loadPolicy(self.model))
 
     self.model:sortPoliciesByPriority()
     self.model:printPolicy()
@@ -262,7 +279,7 @@ end
 function CoreEnforcer:loadFilteredPolicy(filter)
     self.model:clearPolicy()
 
-    self.adapter:loadFilteredPolicy(self.model, filter)
+    checkAdapterResult("loadFilteredPolicy", self.adapter:loadFilteredPolicy(self.model, filter))
 
     self:initBuildRoleLinks()
     self.model:printPolicy()
@@ -289,7 +306,7 @@ function CoreEnforcer:savePolicy()
         error("cannot save a filtered policy")
     end
 
-    self.adapter:savePolicy(self.model)
+    checkAdapterResult("savePolicy", self.adapter:savePolicy(self.model))
 
     if self.watcher then
         if self.watcher.updateForSavePolicy then

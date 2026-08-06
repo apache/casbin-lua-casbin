@@ -14,6 +14,35 @@
 
 local CoreEnforcer = require("src/main/CoreEnforcer")
 
+--[[
+    * tryCall calls fn, usually an adapter operation, and normalizes the way a
+    * failure is reported: an adapter may either raise a Lua error or return
+    * "false, err", and both must reach the caller instead of being dropped.
+    *
+    * @param fn the function to call.
+    * @return true on success, or false plus the error message on failure.
+    *         Operations that the adapter does not implement count as success,
+    *         because persistence of them is optional.
+]]
+local function tryCall(fn)
+    local status, ok, err = pcall(fn)
+
+    if status == false then
+        local message = tostring(ok)
+        if string.sub(message, -15) == "not implemented" then
+            -- log, continue
+            return true
+        end
+        return false, message
+    end
+
+    if ok == false or (ok == nil and err ~= nil) then
+        return false, tostring(err or "unknown error")
+    end
+
+    return true
+end
+
 -- InternalEnforcer = CoreEnforcer + Internal API.
 local InternalEnforcer = {}
 setmetatable(InternalEnforcer, CoreEnforcer)
@@ -38,11 +67,9 @@ function InternalEnforcer:addPolicy(sec, ptype, rule)
 
     if self:shouldPersist() then
 
-        local status, err = pcall(function () self.adapter:addPolicy(sec, ptype, rule) end)
-        if status == false and string.sub(err, -15) == "not implemented" then
-            -- log, continue
-        elseif status == false then
-            return false
+        local ok, err = tryCall(function () return self.adapter:addPolicy(sec, ptype, rule) end)
+        if not ok then
+            return false, err
         end
     end
 
@@ -80,15 +107,13 @@ function InternalEnforcer:addPolicies(sec, ptype, rules)
 
     if self:shouldPersist() then
 
-        local status, err = pcall(function ()
+        local ok, err = tryCall(function ()
             if self.adapter.addPolicies then
-                self.adapter:addPolicies(sec, ptype, rules)
+                return self.adapter:addPolicies(sec, ptype, rules)
             end
         end)
-        if status == false and string.sub(err, -15) == "not implemented" then
-            -- log, continue
-        elseif status == false then
-            return false
+        if not ok then
+            return false, err
         end
     end
 
@@ -130,11 +155,9 @@ function InternalEnforcer:removePolicy(sec, ptype, rule)
 
     if self:shouldPersist() then
 
-        local status, err = pcall(function () self.adapter:removePolicy(sec, ptype, rule) end)
-        if status == false and string.sub(err, -15) == "not implemented" then
-            -- log, continue
-        elseif status == false then
-            return false
+        local ok, err = tryCall(function () return self.adapter:removePolicy(sec, ptype, rule) end)
+        if not ok then
+            return false, err
         end
     end
     
@@ -177,11 +200,9 @@ function InternalEnforcer:updatePolicy(sec, ptype, oldRule, newRule)
     
     if self:shouldPersist() then
 
-        local status, err = pcall(function () self.adapter:updatePolicy(sec, ptype, oldRule, newRule) end)
-        if status == false and string.sub(err, -15) == "not implemented" then
-            -- log, continue
-        elseif status == false then
-            return false
+        local ok, err = tryCall(function () return self.adapter:updatePolicy(sec, ptype, oldRule, newRule) end)
+        if not ok then
+            return false, err
         end
     end
 
@@ -192,26 +213,22 @@ function InternalEnforcer:updatePolicy(sec, ptype, oldRule, newRule)
     end
 
     if sec == "g" then
-        local status, err = pcall(function () 
+        local ok, err = tryCall(function ()
             local oldRules = {}
             table.insert(oldRules, oldRule)
             self:buildIncrementalRoleLinks(self.model.PolicyOperations.POLICY_REMOVE, ptype, oldRules)
         end)
-        if status == false and string.sub(err, -15) == "not implemented" then
-            -- log, continue
-        elseif status == false then
-            return false
+        if not ok then
+            return false, err
         end
-        
-        status, err = pcall(function () 
+
+        ok, err = tryCall(function ()
             local newRules = {}
             table.insert(newRules, newRule)
             self:buildIncrementalRoleLinks(self.model.PolicyOperations.POLICY_ADD, ptype, newRules)
         end)
-        if status == false and string.sub(err, -15) == "not implemented" then
-            -- log, continue
-        elseif status == false then
-            return false
+        if not ok then
+            return false, err
         end
     end
 
@@ -234,11 +251,9 @@ function InternalEnforcer:updatePolicies(sec, ptype, oldRules, newRules)
 
     if self:shouldPersist() then
 
-        local status, err = pcall(function () self.adapter:updatePolicies(sec, ptype, oldRules, newRules) end)
-        if status == false and string.sub(err, -15) == "not implemented" then
-            -- log, continue
-        elseif status == false then
-            return false
+        local ok, err = tryCall(function () return self.adapter:updatePolicies(sec, ptype, oldRules, newRules) end)
+        if not ok then
+            return false, err
         end
     end
 
@@ -249,22 +264,18 @@ function InternalEnforcer:updatePolicies(sec, ptype, oldRules, newRules)
     end
 
     if sec == "g" then
-        local status, err = pcall(function ()
+        local ok, err = tryCall(function ()
             self:buildIncrementalRoleLinks(self.model.PolicyOperations.POLICY_REMOVE, ptype, oldRules)
         end)
-        if status == false and string.sub(err, -15) == "not implemented" then
-            -- log, continue
-        elseif status == false then
-            return false
+        if not ok then
+            return false, err
         end
 
-        status, err = pcall(function ()
+        ok, err = tryCall(function ()
             self:buildIncrementalRoleLinks(self.model.PolicyOperations.POLICY_ADD, ptype, newRules)
         end)
-        if status == false and string.sub(err, -15) == "not implemented" then
-            -- log, continue
-        elseif status == false then
-            return false
+        if not ok then
+            return false, err
         end
     end
 
@@ -294,15 +305,13 @@ function InternalEnforcer:removePolicies(sec, ptype, rules)
 
     if self:shouldPersist() then
 
-        local status, err = pcall(function ()
+        local ok, err = tryCall(function ()
             if self.adapter.removePolicies then
-                self.adapter:removePolicies(sec, ptype, rules)
+                return self.adapter:removePolicies(sec, ptype, rules)
             end
         end)
-        if status == false and string.sub(err, -15) == "not implemented" then
-            -- log, continue
-        elseif status == false then
-            return false
+        if not ok then
+            return false, err
         end
     end
 
@@ -342,11 +351,9 @@ function InternalEnforcer:removeFilteredPolicy(sec, ptype, fieldIndex, fieldValu
 
     if self:shouldPersist() then
         
-        local status, err = pcall(function () self.adapter:removeFilteredPolicy(sec, ptype, fieldIndex, fieldValues) end)
-        if status == false and string.sub(err, -15) == "not implemented" then
-            -- log, continue
-        elseif status == false then
-            return false
+        local ok, err = tryCall(function () return self.adapter:removeFilteredPolicy(sec, ptype, fieldIndex, fieldValues) end)
+        if not ok then
+            return false, err
         end
     end
 
@@ -379,11 +386,9 @@ function InternalEnforcer:updateFilteredPolicies(sec, ptype, newRules, fieldInde
     local oldRules = self.model:getFilteredPolicy(sec, ptype, fieldIndex, fieldValues)
     if self:shouldPersist() then
 
-        local status, err = pcall(function () self.adapter:updateFilteredPolicies(sec, ptype, newRules, fieldIndex, fieldValues) end)
-        if status == false and string.sub(err, -15) == "not implemented" then
-            -- log, continue
-        elseif status == false then
-            return false
+        local ok, err = tryCall(function () return self.adapter:updateFilteredPolicies(sec, ptype, newRules, fieldIndex, fieldValues) end)
+        if not ok then
+            return false, err
         end
     end
 
