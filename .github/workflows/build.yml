@@ -28,10 +28,10 @@ jobs:
     - name: Set up luarocks
       uses: ./.github/actions/setup-luarocks
 
-    - name: Install PCRE
+    - name: Install PCRE2
       run: |
         sudo apt-get update
-        sudo apt-get install libpcre3 libpcre3-dev
+        sudo apt-get install -y libpcre2-dev
 
     - name: Install dependencies
       run: |
@@ -101,10 +101,10 @@ jobs:
     - name: Set up luarocks
       uses: ./.github/actions/setup-luarocks
 
-    - name: Install PCRE
+    - name: Install PCRE2
       run: |
         sudo apt-get update
-        sudo apt-get install libpcre3 libpcre3-dev
+        sudo apt-get install -y libpcre2-dev
 
     - name: Install dependencies
       run: |
