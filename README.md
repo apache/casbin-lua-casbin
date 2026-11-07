@@ -1,4 +1,4 @@
-# lua-casbin
+# Apache Casbin for Lua (incubating)
 [![GitHub Action](https://github.com/apache/casbin-lua-casbin/workflows/build/badge.svg?branch=master)](https://github.com/apache/casbin-lua-casbin/actions)
 [![Coverage Status](https://coveralls.io/repos/github/apache/casbin-lua-casbin/badge.svg?branch=master)](https://coveralls.io/github/apache/casbin-lua-casbin?branch=master)
 [![Discord](https://img.shields.io/discord/1022748306096537660?logo=discord&label=discord&color=5865F2)](https://discord.gg/S5UjpzGZjN)
@@ -31,11 +31,25 @@ production-ready | production-ready | production-ready | production-ready
 [PyCasbin](https://github.com/casbin/pycasbin) | [Casbin.NET](https://github.com/casbin-net/Casbin.NET) | [Casbin-CPP](https://github.com/casbin/casbin-cpp) | [Casbin-RS](https://github.com/casbin/casbin-rs)
 production-ready | production-ready | beta-test | production-ready
 
+## Incubation status
+
+Apache Casbin is an effort undergoing incubation at The Apache Software
+Foundation (ASF), sponsored by the Apache Incubator. Incubation is required
+of all newly accepted projects until a further review indicates that the
+infrastructure, communications, and decision making process have stabilized
+in a manner consistent with other successful ASF projects. While incubation
+status is not necessarily a reflection of the completeness or stability of
+the code, it does indicate that the project has yet to be fully endorsed by
+the ASF.
+
 ## Installation
 
 ```bash
 sudo luarocks install casbin
 ```
+
+The LuaRocks package remains `casbin`, and the Lua import remains
+`require("casbin")`. Releases through 1.46.0 predate Apache incubation.
 
 ## Get Started
 
