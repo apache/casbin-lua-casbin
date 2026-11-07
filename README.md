@@ -51,6 +51,10 @@ sudo luarocks install casbin
 The LuaRocks package remains `casbin`, and the Lua import remains
 `require("casbin")`. Releases through 1.46.0 predate Apache incubation.
 
+Lua 5.1 through 5.4 and LuaJIT are supported. The pinned luaposix dependency
+requires Lua < 5.5; the source syntax fixes alone do not establish Lua 5.5
+installation support.
+
 ## Get Started
 
 1. New Casbin enforcer with a model file and a policy file:

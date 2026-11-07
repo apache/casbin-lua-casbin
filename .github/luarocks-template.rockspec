@@ -21,7 +21,7 @@ the ASF.
    maintainer = "Apache Casbin <dev@casbin.apache.org>"
 }
 dependencies = {
-   "lua >= 5.1",
+   "lua >= 5.1, < 5.5",
    "lualogging >= 1.5.1",
    "lrexlib-pcre2 >= 2.9.2",
    "luaposix = 35.1-1"
