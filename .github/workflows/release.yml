@@ -1,109 +1,40 @@
-name: Release
-
-# Releases are cut manually by pushing a git tag (Apache releases must be voted on,
-# so nothing is published automatically on merge/commit).
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
 #
-#   git tag v1.4.0-rc1 && git push origin v1.4.0-rc1   -> GitHub pre-release (for the Apache vote)
-#   git tag v1.4.0     && git push origin v1.4.0       -> GitHub release + LuaRocks upload
+#   https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+name: Prepare release source
+
+# Tags prepare review input, never a GitHub Release or a LuaRocks upload.
 on:
   push:
-    tags:
-      - 'v*'
+    tags: ['v*']
+  workflow_dispatch:
 
 permissions:
-  contents: write
-
-env:
-  # Base name of the Apache source artifact: apache-<ARTIFACT_ID>-<version>-incubating-src.tar.gz
-  ARTIFACT_ID: casbin-lua
+  contents: read
 
 jobs:
-  release:
-    name: GitHub Release
-    if: github.repository == 'apache/casbin-lua-casbin'
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.vars.outputs.version }}
-      prerelease: ${{ steps.vars.outputs.prerelease }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Resolve version from tag
-        id: vars
-        run: |
-          set -euo pipefail
-          TAG="${GITHUB_REF_NAME}"
-          VERSION="${TAG#v}"
-          # A "-rc<N>" suffix marks an Apache release candidate -> GitHub pre-release only.
-          if [[ "${VERSION}" == *-rc* ]]; then
-            PRERELEASE=true
-          else
-            PRERELEASE=false
-          fi
-          # The source artifact always carries the final version, never the rc suffix, so that
-          # the exact bits that were voted on can be promoted unchanged.
-          BASE_VERSION="${VERSION%%-rc*}"
-          {
-            echo "tag=${TAG}"
-            echo "version=${BASE_VERSION}"
-            echo "prerelease=${PRERELEASE}"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Build Apache source package
-        id: package
-        run: |
-          set -euo pipefail
-          NAME="apache-${ARTIFACT_ID}-${{ steps.vars.outputs.version }}-incubating-src"
-          mkdir -p dist
-          # git archive ships exactly what is tracked at the tag, with a single top-level
-          # directory named after the tarball, and no .git metadata.
-          git archive --format=tar.gz --prefix="${NAME}/" -o "dist/${NAME}.tar.gz" HEAD
-          (cd dist && sha512sum "${NAME}.tar.gz" > "${NAME}.tar.gz.sha512")
-          ls -l dist
-
-      - name: Create GitHub release
-        run: |
-          set -euo pipefail
-          if [ "${{ steps.vars.outputs.prerelease }}" = "true" ]; then
-            FLAG="--prerelease"
-          else
-            FLAG="--latest"
-          fi
-          gh release create "${GITHUB_REF_NAME}" \
-            --title "${GITHUB_REF_NAME}" \
-            --generate-notes \
-            ${FLAG} \
-            dist/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  luarocks:
-    name: Publish to LuaRocks
-    needs: release
-    if: needs.release.outputs.prerelease == 'false'
+  source:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Lua
-        uses: leafo/gh-actions-lua@v10.0.0
+      - uses: actions/checkout@v4
+      - name: Prepare unsigned review archive
+        run: bash scripts/prepare-source.sh "$GITHUB_SHA" "$RUNNER_TEMP/casbin-source"
+      - uses: actions/upload-artifact@v4
         with:
-          luaVersion: 5.1
-
-      - name: Set up luarocks
-        uses: ./.github/actions/setup-luarocks
-
-      - name: Set up CJSON
-        run: luarocks install lua-cjson
-
-      - name: Upload rockspec
-        run: |
-          set -euo pipefail
-          rv="${{ needs.release.outputs.version }}"
-          cp ./.github/luarocks-template.rockspec "./casbin-${rv}-1.rockspec"
-          sed -i "2iversion = \"${rv}-1\"" "./casbin-${rv}-1.rockspec"
-          sed -i "5i\ \ \ tag = \"v${rv}\"" "./casbin-${rv}-1.rockspec"
-          cat "casbin-${rv}-1.rockspec"
-          luarocks upload "casbin-${rv}-1.rockspec" --force --skip-pack --api-key=${{ secrets.LUAROCKS_API_KEY }}
+          name: casbin-lua-source-${{ github.sha }}
+          path: ${{ runner.temp }}/casbin-source/*
+          if-no-files-found: error
