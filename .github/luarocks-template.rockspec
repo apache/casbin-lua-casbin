@@ -1,25 +1,34 @@
 package = "casbin"
+version = "1.47.0-1"
 source = {
-   url = "git+https://github.com/apache/casbin-lua-casbin.git",
+   url = "https://downloads.apache.org/incubator/casbin/lua/1.47.0/apache-casbin-lua-1.47.0-incubating-src.tar.gz",
+   dir = "apache-casbin-lua-1.47.0-incubating-src",
 }
 description = {
-   summary = "An authorization library that supports access control models like ACL, RBAC, ABAC in Lua (OpenResty)",
+   summary = "Apache Casbin for Lua (incubating): ACL, RBAC and ABAC authorization",
    detailed = [[
-      An authorization library that supports access control models like ACL, RBAC, ABAC in Lua (OpenResty)
+Apache Casbin is an effort undergoing incubation at The Apache Software
+Foundation (ASF), sponsored by the Apache Incubator. Incubation is required
+of all newly accepted projects until a further review indicates that the
+infrastructure, communications, and decision making process have stabilized
+in a manner consistent with other successful ASF projects. While incubation
+status is not necessarily a reflection of the completeness or stability of
+the code, it does indicate that the project has yet to be fully endorsed by
+the ASF.
    ]],
-   detailed = "An authorization library that supports access control models like ACL, RBAC, ABAC in Lua (OpenResty)",
    homepage = "https://github.com/apache/casbin-lua-casbin",
    license = "Apache License 2.0",
-   maintainer = "admin@casbin.org"
+   maintainer = "Apache Casbin <dev@casbin.apache.org>"
 }
 dependencies = {
-   "lua >= 5.1",
+   "lua >= 5.1, < 5.5",
    "lualogging >= 1.5.1",
    "lrexlib-pcre2 >= 2.9.2",
    "luaposix = 35.1-1"
 }
 build = {
    type = "builtin",
+   copy_directories = {"doc"},
    modules = {
       ["casbin"] = "casbin.lua",
       ["src.config.Config"] = "src/config/Config.lua",
@@ -35,6 +44,9 @@ build = {
       ["src.model.Model"] = "src/model/Model.lua",
       ["src.model.Policy"] = "src/model/Policy.lua",
       ["src.model.FunctionMap"] = "src/model/FunctionMap.lua",
+      ["src.persist.cache.Cache"] = "src/persist/cache/Cache.lua",
+      ["src.persist.cache.DefaultCache"] = "src/persist/cache/DefaultCache.lua",
+      ["src.persist.UpdateAdapter"] = "src/persist/UpdateAdapter.lua",
       ["src.persist.Adapter"] = "src/persist/Adapter.lua",
       ["src.persist.BatchAdapter"] = "src/persist/BatchAdapter.lua",
       ["src.persist.FilteredAdapter"] = "src/persist/FilteredAdapter.lua",
