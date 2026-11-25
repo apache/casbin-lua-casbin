@@ -19,15 +19,30 @@ local Cache=require("src/persist/cache/Cache")
 
 local DefaultCache=Cache:new()
 
-function DefaultCache:new()
+-- DEFAULT_MAX_ENTRIES is the number of decisions a cached enforcer keeps by default.
+DefaultCache.DEFAULT_MAX_ENTRIES = 100000
+
+-- new creates a DefaultCache that holds at most maxEntries keys, DEFAULT_MAX_ENTRIES
+-- when it is not given. A maxEntries of zero or less means no limit.
+function DefaultCache:new(maxEntries)
     local o = {}
     self.__index = self
     setmetatable(o, self)
     o.m={}
+    o.size = 0
+    o.maxEntries = maxEntries or DefaultCache.DEFAULT_MAX_ENTRIES
     return o
 end
 
+-- set puts key and value into the cache. There is no access order to evict by:
+-- when the cache is full, adding a new key empties it first.
 function DefaultCache:set(key, value, ...)
+    if self.m[key] == nil then
+        if self.maxEntries > 0 and self.size >= self.maxEntries then
+            self:clear()
+        end
+        self.size = self.size + 1
+    end
     self.m[key] = value
     return nil
 end
@@ -45,12 +60,14 @@ function DefaultCache:delete(key)
         return error("there's no such key existing in cache")
     else
         self.m[key]=nil
+        self.size = self.size - 1
         return true
     end
 end
 
 function DefaultCache:clear()
     self.m = { }
+    self.size = 0
     return true
 end
 

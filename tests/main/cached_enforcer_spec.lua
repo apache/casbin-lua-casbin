@@ -129,4 +129,36 @@ describe("Cached Enforcer tests", function ()
         e:enableEnforce(true)
         assert.is.False(e:enforce("bob", "data1", "read"))
     end)
+
+    it("Test Cache is bounded", function ()
+        local DefaultCache = require("src.persist.cache.DefaultCache")
+
+        local c = DefaultCache:new(3)
+        c:set("a", true)
+        c:set("b", false)
+        c:set("c", true)
+        c:set("a", false)
+        assert.are.equal(3, c.size)
+        assert.are.same({false, true}, {c:get("a")})
+
+        c:set("d", true)
+        assert.are.equal(1, c.size)
+        assert.are.same({true, true}, {c:get("d")})
+        local _, ok = c:get("a")
+        assert.is.False(ok)
+
+        c:delete("d")
+        assert.are.equal(0, c.size)
+
+        local model  = path .. "/examples/basic_model.conf"
+        local policy  = path .. "/examples/basic_policy.csv"
+        local e = CachedEnforcer:new(model, policy)
+        assert.are.equal(DefaultCache.DEFAULT_MAX_ENTRIES, e.m.maxEntries)
+        e.m = DefaultCache:new(2)
+        for i = 1, 10 do
+            e:enforce("user" .. i, "data1", "read")
+        end
+        assert.is_true(e.m.size <= 2)
+        assert.is.True(e:enforce("alice", "data1", "read"))
+    end)
 end)
