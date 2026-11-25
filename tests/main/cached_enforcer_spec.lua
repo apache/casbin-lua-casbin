@@ -99,4 +99,16 @@ describe("Cached Enforcer tests", function ()
         local _, ok = e:getCachedResult("stale")
         assert.is.False(ok)
     end)
+
+    it("Test Cache keys do not collide", function ()
+        local model  = path .. "/examples/basic_model.conf"
+        local policy  = path .. "/examples/basic_policy.csv"
+
+        local e = CachedEnforcer:new(model, policy)
+        e:enableAutoSave(false)
+        e:AddPolicy("alice$$data", "x", "read")
+
+        assert.is.True(e:enforce("alice$$data", "x", "read"))
+        assert.is.False(e:enforce("alice", "data$$x", "read"))
+    end)
 end)

@@ -49,14 +49,9 @@ function CachedEnforcer:enforce(...)
         return Enforcer.enforce(self, ...)
     end
 
-    local rvals = {...}
-    local key = ""
-    for _, rval in pairs(rvals) do
-        if type(rval) == "string" then
-            key = key .. rval .. "$$"
-        else
-            return Enforcer.enforce(self, ...)
-        end
+    local key = self:getCacheKey(...)
+    if key == nil then
+        return Enforcer.enforce(self, ...)
     end
 
     local version = self:getPolicyVersion()
@@ -80,6 +75,21 @@ function CachedEnforcer:syncCacheVersion(version)
     end
     self.m:clear()
     self.cacheVersion = version
+end
+
+-- getCacheKey returns the cache key of a request, or nil when the request
+-- cannot be cached. Each value is length-prefixed so that different requests
+-- never share a key.
+function CachedEnforcer:getCacheKey(...)
+    local parts = {}
+    for i = 1, select("#", ...) do
+        local rval = select(i, ...)
+        if type(rval) ~= "string" then
+            return nil
+        end
+        table.insert(parts, #rval .. ":" .. rval)
+    end
+    return table.concat(parts)
 end
 
 function CachedEnforcer:getCachedResult(key)
