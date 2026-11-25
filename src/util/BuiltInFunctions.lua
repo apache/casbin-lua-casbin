@@ -223,33 +223,57 @@ end
 
 -- IPMatch determines whether IP address ip1 matches the pattern of IP address ip2, ip2 can be an IP address or a CIDR pattern.
 -- For example, "192.168.2.123" matches "192.168.2.0/24"
-function BuiltInFunctions.IPMatch(ip1, ip2)
-    local getip1 = {string.match(ip1,"(%d+)%.(%d+)%.(%d+)%.(%d+)" )}
-    local objIP1=0
-    for i=1,4 do
-        if getip1[i]==nil or tonumber(getip1[i])>255 or tonumber(getip1[i])<0 then
-            error("invalid argument: ip1 in IPMatch() function is not an IP address.")
-        else
-            objIP1=objIP1+2^(8*(4-i))*getip1[i]
+-- parseDecimal parses a decimal number without leading zeros, returning nil if it is not one or exceeds max.
+local function parseDecimal(s, max)
+    if not string.match(s, "^%d+$") or (#s > 1 and string.sub(s, 1, 1) == "0") then
+        return nil
+    end
+    local n = tonumber(s)
+    if n > max then
+        return nil
+    end
+    return n
+end
+
+-- parseIPv4 parses a dotted-quad IPv4 address, the whole string, returning nil if it is not one.
+local function parseIPv4(s)
+    local octets = {string.match(s, "^(%d+)%.(%d+)%.(%d+)%.(%d+)$")}
+    if #octets ~= 4 then
+        return nil
+    end
+    local ip = 0
+    for i = 1, 4 do
+        local octet = parseDecimal(octets[i], 255)
+        if octet == nil then
+            return nil
         end
+        ip = ip * 256 + octet
+    end
+    return ip
+end
+
+function BuiltInFunctions.IPMatch(ip1, ip2)
+    local objIP1 = parseIPv4(ip1)
+    if objIP1 == nil then
+        error("invalid argument: ip1 in IPMatch() function is not an IP address.")
     end
     if ip1==ip2 then
         return true
     end
 
     local cidr
-    ip2=string.gsub(ip2,"/(%d+)",function(s) cidr=s return "" end)
-    local getip2 = {string.match(ip2,"(%d+)%.(%d+)%.(%d+)%.(%d+)" )}
-    local objIP2=0
-    for i=1,4 do
-        if getip2[i]==nil or tonumber(getip2[i])>255 or tonumber(getip2[i])<0 then
-            error("invalid argument: ip1 in IPMatch() function is not an IP address.")
-        else
-            objIP2=objIP2+2^(8*(4-i))*getip2[i]
-        end
+    local addr, prefix = string.match(ip2, "^([^/]*)/([^/]*)$")
+    if addr then
+        cidr = parseDecimal(prefix, 32)
+    else
+        addr = ip2
+    end
+    local objIP2 = parseIPv4(addr)
+    if objIP2 == nil or (prefix ~= nil and cidr == nil) then
+        error("invalid argument: ip2 in IPMatch() function is neither an IP address nor a CIDR.")
     end
     if cidr==nil then
-        return false
+        return objIP1 == objIP2
     else
         local number1,_=math.modf(objIP1/(2^(32-cidr)))
         local number2,_=math.modf(objIP2/(2^(32-cidr)))

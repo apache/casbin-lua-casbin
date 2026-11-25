@@ -263,6 +263,21 @@ describe("BuiltInFunctions tests", function ()
         assert.is.True(BuiltInFunctions.IPMatch("192.168.2.123", "192.168.2.123"))
         assert.is.False(BuiltInFunctions.IPMatch("192.168.2.124", "192.168.2.123"))
         assert.is.False(BuiltInFunctions.IPMatch("192.166.2.123", "192.168.2.123"))
+
+        -- Anything that is not exactly an IP address or a CIDR is rejected.
+        for _, ip in ipairs({"192.168.2.123abc", "x192.168.2.123", "192.168.2.123 ", "192.168.2.123/24",
+                             "192.168.2.1.5", "192.168.2", "192.168.256.1", "192.168.02.1", ""}) do
+            assert.has_error(function () BuiltInFunctions.IPMatch(ip, "192.168.2.0/24") end,
+                "invalid argument: ip1 in IPMatch() function is not an IP address.")
+        end
+        for _, ip in ipairs({"192.168.2.0/24abc", "192.168.2.0abc/24", "192.168.2.0/33", "192.168.2.0/",
+                             "192.168.2.0/024", "192.168.2.0/24/8", "abc"}) do
+            assert.has_error(function () BuiltInFunctions.IPMatch("192.168.2.123", ip) end,
+                "invalid argument: ip2 in IPMatch() function is neither an IP address nor a CIDR.")
+        end
+        assert.is.True(BuiltInFunctions.IPMatch("10.0.0.1", "0.0.0.0/0"))
+        assert.is.True(BuiltInFunctions.IPMatch("192.168.2.123", "192.168.2.123/32"))
+        assert.is.False(BuiltInFunctions.IPMatch("192.168.2.124", "192.168.2.123/32"))
     end)
     
     it("keyMatch5 tests", function ()
