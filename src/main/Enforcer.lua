@@ -148,7 +148,7 @@ function Enforcer:GetPermissionsForUser(user, ...)
                 args[index] = domain[1]
             end
         end
-        local perm = self:GetFilteredPolicy(0, args)
+        local perm = self:GetFilteredNamedPolicy(ptype, 0, args)
         for _, v in pairs(perm) do
             table.insert(permissions, v)
         end

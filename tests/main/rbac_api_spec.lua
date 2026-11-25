@@ -208,6 +208,29 @@ describe("RBAC API tests", function ()
         assert.is.False(e:enforce( "bob", "write"))
     end)
 
+    it("Permission API with multiple policy types test", function ()
+        local modelText = [[
+            [request_definition]
+            r = sub, obj, act
+            [policy_definition]
+            p = sub, obj, act
+            p2 = sub, act
+            [policy_effect]
+            e = some(where (p.eft == allow))
+            [matchers]
+            m = r.sub == p.sub && r.obj == p.obj && r.act == p.act
+        ]]
+        local policyText = [[
+            p, alice, data1, read
+            p2, alice, write
+        ]]
+
+        local e = Enforcer:newEnforcerFromText(modelText, policyText)
+        local permissions = e:GetPermissionsForUser("alice")
+        table.sort(permissions, function (x, y) return #x > #y end)
+        assert.is.Same({{"alice", "data1", "read"}, {"alice", "write"}}, permissions)
+    end)
+
     it("Implicit Role API test", function ()
         local model  = path .. "/examples/rbac_model.conf"
         local policy  = path .. "/examples/rbac_with_hierarchy_policy.csv"
