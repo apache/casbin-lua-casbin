@@ -275,6 +275,11 @@ end
 ]]
 function CoreEnforcer:clearPolicy()
     self.model:clearPolicy()
+    if self.autoBuildRoleLinks then
+        for _, rm in pairs(self.rmMap) do
+            rm:clear()
+        end
+    end
 end
 
 --[[

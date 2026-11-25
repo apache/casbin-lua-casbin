@@ -523,4 +523,19 @@ describe("RBAC API with domains tests", function ()
 
         testDeleteDomains({})
     end)
+
+    it("clearPolicy clears role links test", function ()
+        local model  = path .. "/examples/rbac_model.conf"
+        local policy  = path .. "/examples/rbac_policy.csv"
+
+        local e = Enforcer:new(model, policy)
+        assert.is.True(e:enforce("alice", "data2", "read"))
+
+        e:clearPolicy()
+        assert.is.Same({}, e:GetRolesForUser("alice"))
+
+        e:AddPolicy("data2_admin", "data2", "read")
+        assert.is.False(e:enforce("alice", "data2", "read"))
+        assert.is.True(e:enforce("data2_admin", "data2", "read"))
+    end)
 end)
