@@ -304,35 +304,31 @@ end
 
 -- Updates multiple policy rules from the model.
 function Policy:updatePolicies(sec, ptype, oldRules, newRules)
-    local rollbackFlag = false
-    local modifiedRuleIndex = {}
-
-    local newIndex = 1
-    for oldIndex, oldRule in pairs(oldRules) do
-        local oldPolicy = table.concat(oldRule, ",")
-        if self.model[sec][ptype].policyMap[oldPolicy] == nil then
-            rollbackFlag = true
-            break
-        end
-        local index = self.model[sec][ptype].policyMap[oldPolicy]
-
-        self.model[sec][ptype].policy[index] = newRules[newIndex]
-        self.model[sec][ptype].policyMap[oldPolicy] = nil
-        self.model[sec][ptype].policyMap[table.concat(newRules[newIndex], ",")] = index
-        modifiedRuleIndex[index] = {oldIndex, newIndex}
-        newIndex = newIndex+1
-    end
-
-    if rollbackFlag then
-        for index, oldNewIndex in pairs(modifiedRuleIndex)  do
-            self.model[sec][ptype].policy[index] = oldRules[oldNewIndex[1]]
-            local oldPolicy = table.concat(oldRules[oldNewIndex[1]], ",")
-            local newPolicy = table.concat(newRules[oldNewIndex[2]], ",")
-            self.model[sec][ptype].policyMap[newPolicy] = nil
-            self.model[sec][ptype].policyMap[oldPolicy] = index
-        end
+    local ast = self.model[sec][ptype]
+    if #oldRules ~= #newRules then
         return false
     end
+
+    -- Resolve all indexes before writing, since newRules may reuse keys of oldRules.
+    local indexes = {}
+    local seen = {}
+    for i, oldRule in ipairs(oldRules) do
+        local index = ast.policyMap[table.concat(oldRule, ",")]
+        if index == nil or seen[index] then
+            return false
+        end
+        seen[index] = true
+        indexes[i] = index
+    end
+
+    for _, oldRule in ipairs(oldRules) do
+        ast.policyMap[table.concat(oldRule, ",")] = nil
+    end
+    for i, newRule in ipairs(newRules) do
+        ast.policy[indexes[i]] = newRule
+        ast.policyMap[table.concat(newRule, ",")] = indexes[i]
+    end
+
     return true
 end
 

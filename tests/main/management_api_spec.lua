@@ -263,4 +263,30 @@ describe("Management API tests", function ()
         }
         assert.is.Same(res, e:GetGroupingPolicy())
     end)
+
+    it("Update Policies with reused rules test", function ()
+        local model  = path .. "/examples/rbac_model.conf"
+        local policy  = path .. "/examples/rbac_policy.csv"
+
+        local e = Enforcer:new(model, policy)
+        e:enableAutoSave(false)
+
+        assert.is.True(e:UpdatePolicies({{"alice", "data1", "read"}, {"bob", "data2", "write"}}, {{"bob", "data2", "write"}, {"alice", "data1", "read"}}))
+        assert.is.Same({
+            {"bob", "data2", "write"},
+            {"alice", "data1", "read"},
+            {"data2_admin", "data2", "read"},
+            {"data2_admin", "data2", "write"}
+        }, e:GetPolicy())
+        assert.is.True(e:HasPolicy("alice", "data1", "read"))
+        assert.is.True(e:HasPolicy("bob", "data2", "write"))
+
+        assert.is.True(e:RemovePolicy("bob", "data2", "write"))
+        assert.is.False(e:enforce("bob", "data2", "write"))
+        assert.is.True(e:enforce("alice", "data1", "read"))
+
+        assert.is.False(e:UpdatePolicies({{"alice", "data1", "read"}, {"alice", "data1", "read"}}, {{"x", "y", "z"}, {"u", "v", "w"}}))
+        assert.is.True(e:HasPolicy("alice", "data1", "read"))
+        assert.is.False(e:HasPolicy("x", "y", "z"))
+    end)
 end)
