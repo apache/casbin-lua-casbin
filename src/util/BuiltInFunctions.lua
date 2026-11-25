@@ -90,25 +90,34 @@ function BuiltInFunctions.keyMatch2Func(args)
     return BuiltInFunctions.keyMatch2(args[1], args[2])
 end
 
+-- tokenGroup returns the named capture group that stands in for the i-th pattern variable.
+-- Values are looked up by group name rather than by position, because key2 can carry
+-- capture groups of its own, e.g. "/(a|b)/{id}".
+local function tokenGroup(i, expr)
+    return "(?<casbinToken" .. i .. ">" .. expr .. ")"
+end
+
+local function tokenValue(captures, i)
+    return captures["casbinToken" .. i]
+end
+
 -- KeyGet2 returns value matched pattern
 -- For example, "/resource1" matches "/:resource"
 -- if the pathVar == "resource", then "resource1" will be returned
 function BuiltInFunctions.keyGet2(key1, key2 , pathVar)
     key2 = string.gsub(key2, "/%*", "/.*")
-    local keys ={}
-    local repl=function(s)
-        table.insert(keys, string.sub(s, 1, -1))
-        return "([^/]+)"
-    end
-    key2 = string.gsub(key2,":[^/]+",repl)
-    key2 = "^" .. key2 .. "$"
-    local values = {string.match(key1,key2)}
-    if #values == 0 then
+    local keys = {}
+    key2 = rex.gsub(key2, ":[^/]+", function(s)
+        table.insert(keys, string.sub(s, 2))
+        return tokenGroup(#keys, "[^/]+")
+    end)
+    local _, _, captures = rex.new("^" .. key2 .. "$"):tfind(key1)
+    if not captures then
         return ""
     end
-    for i, key in pairs(keys) do
-        if pathVar == string.sub(key,2,-1) then
-            return values[i]
+    for i, key in ipairs(keys) do
+        if pathVar == key then
+            return tokenValue(captures, i)
         end
     end
     return ""
@@ -141,33 +150,24 @@ end
 -- But KeyMatch3 will match both.
 function BuiltInFunctions.keyMatch4(key1, key2)
     key2 = string.gsub(key2, "/%*", "/.*")
-    local tokens={}
-    local repl=function(s)
-        table.insert(tokens, string.sub(s, 1, -1))
-        return "([^/]+)"
-    end
-    key2=string.gsub(key2,"{([^/]+)}",repl)
-    key2="^" .. key2 .. "$"
+    local tokens = {}
+    key2 = rex.gsub(key2, "{([^/]+)}", function(token)
+        table.insert(tokens, token)
+        return tokenGroup(#tokens, "[^/]+")
+    end)
 
-    -- Without any {token}, the pattern has no captures, so string.match would
-    -- return the whole match instead of a (possibly empty) list of values.
-    if #tokens==0 then
-        return string.match(key1, key2)~=nil
-    end
-
-    local matches={string.match(key1, key2)}
-    if matches[1]==nil then
+    local _, _, captures = rex.new("^" .. key2 .. "$"):tfind(key1)
+    if not captures then
         return false
     end
-    if #tokens~= #matches then
-        error("KeyMatch4: number of tokens is not equal to number of values")
-    end
-    local values={}
-    for key, token in pairs(tokens) do
-        if values[token]==nil then
-            values[token] = matches[key]
+
+    local values = {}
+    for i, token in ipairs(tokens) do
+        local value = tokenValue(captures, i)
+        if values[token] == nil then
+            values[token] = value
         end
-        if values[token] ~= matches[key] then
+        if values[token] ~= value then
             return false
         end
     end

@@ -123,6 +123,12 @@ describe("BuiltInFunctions tests", function ()
         assert.are.equal("",BuiltInFunctions.keyGet2("/alice/all", "/:id", "id"))
 
         assert.are.equal("",BuiltInFunctions.keyGet2("/alice/all", "/:/all", ""))
+
+        -- Capture groups of the pattern's own must not shift which value a token gets.
+        assert.are.equal("42",BuiltInFunctions.keyGet2("/a/x/42", "/(a|b)/x/:id", "id"))
+        assert.are.equal("42",BuiltInFunctions.keyGet2("/42/a", "/:id/(a|b)", "id"))
+        assert.are.equal("9",BuiltInFunctions.keyGet2("/b/7/c/9", "/(a|b)/:x/(c|d)/:y", "y"))
+        assert.are.equal("my-id",BuiltInFunctions.keyGet2("/proxy/my-id", "/proxy/:id", "id"))
     end)
 
     it("keyMatch3 tests", function ()
@@ -184,6 +190,13 @@ describe("BuiltInFunctions tests", function ()
         -- The pattern is anchored, so it must match the whole key.
         assert.is.False(BuiltInFunctions.keyMatch4("/parent/123/child/123/extra", "/parent/{id}/child/{id}"))
         assert.is.False(BuiltInFunctions.keyMatch4("data11", "data1"))
+
+        -- Capture groups of the pattern's own must not shift which value a token gets.
+        assert.is.True(BuiltInFunctions.keyMatch4("/a/123/child/123", "/(a|b)/{id}/child/{id}"))
+        assert.is.False(BuiltInFunctions.keyMatch4("/a/123/child/456", "/(a|b)/{id}/child/{id}"))
+        assert.is.False(BuiltInFunctions.keyMatch4("/c/123/child/123", "/(a|b)/{id}/child/{id}"))
+        assert.is.True(BuiltInFunctions.keyMatch4("/123/x/123", "/{id}/(x|y)/{id}"))
+        assert.is.True(BuiltInFunctions.keyMatch4("/my-parent/1/child/1", "/my-parent/{id}/child/{id}"))
     end)
 
     it("regexMatch tests", function ()
