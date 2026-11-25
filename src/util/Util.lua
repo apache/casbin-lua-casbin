@@ -18,6 +18,22 @@
 -- Utility Functions for lua-casbin
 local Util = {}
 
+-- policyLine serializes a policy type and its rule fields into one line of a policy file.
+-- Fields containing a line break are rejected, because policy lines are loaded one
+-- physical line at a time.
+function Util.policyLine(ptype, rule)
+    local fields = {ptype}
+    for _, field in ipairs(rule) do
+        table.insert(fields, field)
+    end
+    for _, field in ipairs(fields) do
+        if string.find(field, "[\r\n]") then
+            error(string.format("invalid policy field %q: line breaks are not allowed", field))
+        end
+    end
+    return Util.arrayToString(fields)
+end
+
 -- arrayToString convert table of strings to one string
 function Util.arrayToString(rule)
     local str = ""

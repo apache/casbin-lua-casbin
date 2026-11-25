@@ -63,26 +63,20 @@ function FileAdapter:savePolicy(model, saveToFilePath)
     local filePath = saveToFilePath
     if not filePath then filePath = self.filePath end
 
+    -- Build every line before opening the file, so that a rejected rule leaves it untouched.
+    local lines = {}
+    for _, sec in ipairs({"p", "g"}) do
+        if model.model[sec] then
+            for ptype, ast in pairs(model.model[sec]) do
+                for _, rule in pairs(ast.policy) do
+                    table.insert(lines, Util.policyLine(ptype, rule) .. "\n")
+                end
+            end
+        end
+    end
+
     local f = assert(io.open(filePath,"w"))
-
-    if model.model["p"] then
-        for ptype, ast in pairs(model.model["p"]) do
-            for _, rule in pairs(ast.policy) do
-                local str = ptype .. ", " .. Util.arrayToString(rule) .. "\n"
-                f:write(str)
-            end
-        end
-    end
-
-    if model.model["g"] then
-        for ptype, ast in pairs(model.model["g"]) do
-            for _, rule in pairs(ast.policy) do
-                local str = ptype .. ", " .. Util.arrayToString(rule) .. "\n"
-                f:write(str)
-            end
-        end
-    end
-
+    f:write(table.concat(lines))
     f:close()
 end
 
