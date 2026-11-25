@@ -150,12 +150,25 @@ function CoreEnforcer:initWithModelAndAdapter(m, adapter)
 end
 
 function CoreEnforcer:initialize()
+    self:bumpPolicyVersion()
     self.rmMap = {}
     self.enabled = true
     self.autoSave = true
     self.autoBuildRoleLinks = true
     self.autoNotifyDispatcher = true
     self:initBuildRoleLinks()
+end
+
+--[[
+     * getPolicyVersion returns a counter that changes whenever the policy, the
+     * role links or anything else that decides enforce() results changes.
+]]
+function CoreEnforcer:getPolicyVersion()
+    return self.policyVersion or 0
+end
+
+function CoreEnforcer:bumpPolicyVersion()
+    self.policyVersion = (self.policyVersion or 0) + 1
 end
 
 -- 
@@ -214,6 +227,7 @@ end
 ]]
 function CoreEnforcer:setModel(model)
     self.model = model
+    self:bumpPolicyVersion()
 end
 
 --[[
@@ -259,6 +273,7 @@ end
 ]]
 function CoreEnforcer:setRoleManager(rm)
     self.rmMap["g"] = rm
+    self:bumpPolicyVersion()
 end
 
 --[[
@@ -268,6 +283,7 @@ end
 ]]
 function CoreEnforcer:setEffector(eft)
     self.eft = eft
+    self:bumpPolicyVersion()
 end
 
 --[[
@@ -280,6 +296,7 @@ function CoreEnforcer:clearPolicy()
             rm:clear()
         end
     end
+    self:bumpPolicyVersion()
 end
 
 --[[
@@ -287,6 +304,7 @@ end
 ]]
 function CoreEnforcer:loadPolicy()
     self.model:clearPolicy()
+    self:bumpPolicyVersion()
     checkAdapterResult("loadPolicy", self.adapter:loadPolicy(self.model))
 
     self.model:sortPoliciesByPriority()
@@ -295,6 +313,7 @@ function CoreEnforcer:loadPolicy()
     if self.autoBuildRoleLinks then
         self:buildRoleLinks()
     end
+    self:bumpPolicyVersion()
 end
 
 --[[
@@ -304,6 +323,7 @@ end
 ]]
 function CoreEnforcer:loadFilteredPolicy(filter)
     self.model:clearPolicy()
+    self:bumpPolicyVersion()
 
     checkAdapterResult("loadFilteredPolicy", self.adapter:loadFilteredPolicy(self.model, filter))
 
@@ -312,6 +332,7 @@ function CoreEnforcer:loadFilteredPolicy(filter)
     if self.autoBuildRoleLinks then
         self:buildRoleLinks()
     end
+    self:bumpPolicyVersion()
 end
 
 --[[
@@ -421,6 +442,7 @@ function CoreEnforcer:buildRoleLinks()
     end
 
     self.model:buildRoleLinks(self.rmMap)
+    self:bumpPolicyVersion()
 end
 
 --[[
@@ -624,6 +646,7 @@ end
 function CoreEnforcer:AddNamedMatchingFunc(ptype, fn)
     if self.rmMap[ptype] then
         self.rmMap[ptype].matchingFunc = fn
+        self:bumpPolicyVersion()
         return true
     end
     return false
@@ -633,6 +656,7 @@ end
 function CoreEnforcer:AddNamedDomainMatchingFunc(ptype, fn)
     if self.rmMap[ptype] then
         self.rmMap[ptype].domainMatchingFunc = fn
+        self:bumpPolicyVersion()
         return true
     end
     return false

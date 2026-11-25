@@ -31,17 +31,16 @@ describe("Cached Enforcer tests", function ()
         assert.is.False(e:enforce("alice", "data2", "read"))
         assert.is.False(e:enforce("alice", "data2", "write"))
 
-        -- The cache is enabled, so even if we remove a policy rule, the decision
-	    -- for ("alice", "data1", "read") will still be true, as it uses the cached result.
+        -- Changing the policy drops the cached decisions, so the decision
+        -- for ("alice", "data1", "read") is evaluated again and is false now.
         e:RemovePolicy("alice", "data1", "read")
 
-        assert.is.True(e:enforce("alice", "data1", "read"))
+        assert.is.False(e:enforce("alice", "data1", "read"))
         assert.is.False(e:enforce("alice", "data1", "write"))
         assert.is.False(e:enforce("alice", "data2", "read"))
         assert.is.False(e:enforce("alice", "data2", "write"))
 
-        -- Now we invalidate the cache, then all first-coming Enforce() has to be evaluated in real-time.
-        -- The decision for ("alice", "data1", "read") will be false now.
+        -- Invalidating the cache by hand still works.
         e:invalidateCache()
 
         assert.is.False(e:enforce("alice", "data1", "read"))
@@ -58,5 +57,46 @@ describe("Cached Enforcer tests", function ()
         assert.is.False(e:enforce("alice", "data1", "write"))
         assert.is.False(e:enforce("alice", "data2", "read"))
         assert.is.False(e:enforce("alice", "data2", "write"))
+    end)
+
+    it("Test Cache is invalidated on policy and role changes", function ()
+        local model  = path .. "/examples/rbac_model.conf"
+        local policy  = path .. "/examples/rbac_policy.csv"
+
+        local e = CachedEnforcer:new(model, policy)
+        e:enableAutoSave(false)
+
+        assert.is.True(e:enforce("alice", "data2", "read"))
+        e:DeleteRoleForUser("alice", "data2_admin")
+        assert.is.False(e:enforce("alice", "data2", "read"))
+
+        e:AddRoleForUser("alice", "data2_admin")
+        assert.is.True(e:enforce("alice", "data2", "read"))
+        e:UpdatePolicy({"data2_admin", "data2", "read"}, {"data2_admin", "data3", "read"})
+        assert.is.False(e:enforce("alice", "data2", "read"))
+
+        assert.is.False(e:enforce("bob", "data1", "read"))
+        e:AddPolicy("bob", "data1", "read")
+        assert.is.True(e:enforce("bob", "data1", "read"))
+        e:clearPolicy()
+        assert.is.False(e:enforce("bob", "data1", "read"))
+
+        e:loadPolicy()
+        assert.is.True(e:enforce("alice", "data2", "read"))
+    end)
+
+    it("Test Cache is not written with a decision made before a policy change", function ()
+        local model  = path .. "/examples/basic_model.conf"
+        local policy  = path .. "/examples/basic_policy.csv"
+
+        local e = CachedEnforcer:new(model, policy)
+        e:enableAutoSave(false)
+
+        local version = e:getPolicyVersion()
+        e:RemovePolicy("alice", "data1", "read")
+        e:syncCacheVersion(e:getPolicyVersion())
+        e:setCachedResult("stale", true, version)
+        local _, ok = e:getCachedResult("stale")
+        assert.is.False(ok)
     end)
 end)

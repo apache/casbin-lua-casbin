@@ -29,6 +29,7 @@ function CachedEnforcer:new(model, adapter)
     setmetatable(e, self)
     e.cacheEnabled = true
     e.m = DefaultCache:new()
+    e.cacheVersion = e:getPolicyVersion()
     return e
 end
 
@@ -58,6 +59,9 @@ function CachedEnforcer:enforce(...)
         end
     end
 
+    local version = self:getPolicyVersion()
+    self:syncCacheVersion(version)
+
     local res, ok = self:getCachedResult(key)
     if ok then
         return res
@@ -65,15 +69,29 @@ function CachedEnforcer:enforce(...)
 
     res = Enforcer.enforce(self, ...)
 
-    self:setCachedResult(key, res)
+    self:setCachedResult(key, res, version)
     return res
+end
+
+-- syncCacheVersion drops all cached decisions when the policy has changed since they were cached.
+function CachedEnforcer:syncCacheVersion(version)
+    if self.cacheVersion ~= nil and version <= self.cacheVersion then
+        return
+    end
+    self.m:clear()
+    self.cacheVersion = version
 end
 
 function CachedEnforcer:getCachedResult(key)
     return self.m:get(key)
 end
 
-function CachedEnforcer:setCachedResult(key, res)
+-- setCachedResult caches a decision, unless the policy has changed since the
+-- decision was made at the given version.
+function CachedEnforcer:setCachedResult(key, res, version)
+    if version ~= nil and version ~= self.cacheVersion then
+        return
+    end
     self.m:set(key, res)
 end
 

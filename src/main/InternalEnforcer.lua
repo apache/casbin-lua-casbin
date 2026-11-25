@@ -423,6 +423,26 @@ function InternalEnforcer:updateFilteredPolicies(sec, ptype, newRules, fieldInde
     return true
 end
 
+local function bumpPolicyVersionAfter(self, ok, ...)
+    self:bumpPolicyVersion()
+    if not ok then
+        error((...), 0)
+    end
+    return ...
+end
+
+-- Every policy change, failed or not, moves the policy version on, so that
+-- decisions cached before it are no longer served.
+for _, name in ipairs({
+    "addPolicy", "addPolicies", "removePolicy", "removePolicies", "removeFilteredPolicy",
+    "updatePolicy", "updatePolicies", "updateFilteredPolicies",
+}) do
+    local fn = InternalEnforcer[name]
+    InternalEnforcer[name] = function(self, ...)
+        return bumpPolicyVersionAfter(self, pcall(fn, self, ...))
+    end
+end
+
 function InternalEnforcer:getDomainIndex(ptype)
     if not self.model.model["p"] then return end
     if not self.model.model["p"][ptype] then return end
