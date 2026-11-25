@@ -128,6 +128,8 @@ describe("util tests", function()
         assert.are.same({"a == \"b\"", "c"}, Util.splitEnhanced('a == "b", c', ",", true))
         assert.are.same({"a == \"b\"", "c"}, Util.splitEnhanced('"a == ""b"" ", c', ",", true))
         assert.are.same({"a", "b, c"}, Util.splitEnhanced('a, "b, c"', ",", true))
+        assert.are.same({"p", "a, b", "c, d", "e"}, Util.splitEnhanced('p, "a, b", "c, d", e', ",", true))
+        assert.are.same({"p", 'say "hi"', "c, d"}, Util.splitEnhanced('p, "say ""hi""", "c, d"', ",", true))
 
         assert.has_error(function () Util.splitEnhanced('a, "b, c"   ', ",", true) end, "Quoted fields cannot have extra characters outside double quotes.")
         assert.has_error(function () Util.splitEnhanced('"a, b" hello, c', ",", true) end, "Quoted fields cannot have extra characters outside double quotes.")

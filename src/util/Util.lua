@@ -19,16 +19,20 @@
 local Util = {}
 
 -- policyLine serializes a policy type and its rule fields into one line of a policy file.
--- Fields containing a line break are rejected, because policy lines are loaded one
--- physical line at a time.
+-- Fields containing a comma or a double quote are quoted CSV-style (inner double quotes
+-- doubled), so that the line loads back into the same fields. Fields containing a line
+-- break are rejected, because policy lines are loaded one physical line at a time.
 function Util.policyLine(ptype, rule)
     local fields = {ptype}
     for _, field in ipairs(rule) do
         table.insert(fields, field)
     end
-    for _, field in ipairs(fields) do
+    for i, field in ipairs(fields) do
         if string.find(field, "[\r\n]") then
             error(string.format("invalid policy field %q: line breaks are not allowed", field))
+        end
+        if string.find(field, '[,"]') then
+            fields[i] = '"' .. string.gsub(field, '"', '""') .. '"'
         end
     end
     return Util.arrayToString(fields)
@@ -465,6 +469,7 @@ function Util.splitEnhanced(str, delim, trimFields)
                         table.insert(result, field)
                         field = ""
                         quotedField = false
+                        escaping = false
                     -- "" Escapes the double quote character
                     elseif char == '"' then
                         field = field .. char

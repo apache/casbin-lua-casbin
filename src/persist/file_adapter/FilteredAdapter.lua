@@ -105,7 +105,7 @@ function FilteredAdapter:filterLine(line, filter)
         return false
     end
 
-    local p = Util.split(line, ", ")
+    local p = Util.splitEnhanced(line, ",", true)
 
     if #p == 0 then
         return true

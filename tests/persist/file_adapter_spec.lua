@@ -119,4 +119,37 @@ describe("FileAdapter tests", function()
         assert.is.False(new_model:hasPolicy("g", "g", {"eve", "data2_admin"}))
         assert.are.equal(4, #new_model:getPolicy("p", "p"))
     end)
+
+    it("test savePolicy quotes fields with commas and double quotes", function ()
+        local Enforcer = require("src.main.Enforcer")
+        local FilteredAdapter = require("src.persist.file_adapter.FilteredAdapter")
+        local Filter = require("src.persist.file_adapter.Filter")
+
+        local f = FileAdapter:new(basic_policy_path)
+        local m = Model:new()
+        m:loadModel(basic_path)
+        f:loadPolicy(m)
+        m:addPolicy("p", "p", {"alice, data", "data1", "read"})
+        m:addPolicy("p", "p", {"bob", 'say "hi", "x"', "write, all"})
+        f:savePolicy(m, save_policy_path)
+
+        local new_file_adapter = FileAdapter:new(save_policy_path)
+        local new_model = Model:new()
+        new_model:loadModel(basic_path)
+        new_file_adapter:loadPolicy(new_model)
+        assert.are.same(m:getPolicy("p", "p"), new_model:getPolicy("p", "p"))
+
+        local e = Enforcer:new(basic_path, save_policy_path)
+        assert.is.True(e:enforce("alice, data", "data1", "read"))
+        assert.is.True(e:enforce("bob", 'say "hi", "x"', "write, all"))
+        assert.is.False(e:enforce("alice", "data1", "write"))
+
+        local filter = {}
+        setmetatable(filter, Filter)
+        filter.P = {"", 'say "hi", "x"'}
+        filter.G = {}
+        local fe = Enforcer:new(basic_path, FilteredAdapter:new(save_policy_path))
+        fe:loadFilteredPolicy(filter)
+        assert.are.same({{"bob", 'say "hi", "x"', "write, all"}}, fe:GetPolicy())
+    end)
 end)
