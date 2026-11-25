@@ -85,4 +85,16 @@ describe("FileAdapter tests", function()
         assert.has_error(function () f:removePolicy() end, "not implemented")
         assert.has_error(function () f:removeFilteredPolicy() end, "not implemented")
     end)
+
+    it("test loadPolicyLine with a missing policy type", function ()
+        local Adapter = require("src.persist.Adapter")
+        local m = Model:new()
+        m:loadModel(basic_path)
+
+        assert.has_error(function () Adapter.loadPolicyLine(", alice, data1, read", m) end, "invalid policy rule: missing policy type")
+        assert.are.same({}, m:getPolicy("p", "p"))
+
+        Adapter.loadPolicyLine("p, alice, data1, read", m)
+        assert.are.same({{"alice", "data1", "read"}}, m:getPolicy("p", "p"))
+    end)
 end)

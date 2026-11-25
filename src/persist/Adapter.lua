@@ -33,6 +33,9 @@ function Adapter.loadPolicyLine(line, model)
 
     local tokens = Util.splitEnhanced(line, ',', true)
     local key = tokens[1]
+    if key == nil or key == "" then
+        error("invalid policy rule: missing policy type")
+    end
     local sec = key:sub(1, 1)
 
     if model.model[sec] == nil then
