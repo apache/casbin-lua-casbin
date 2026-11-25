@@ -45,7 +45,7 @@ end
 -- enforce decides whether a "subject" can access a "object" with the operation "action", input parameters are usually: (sub, obj, act).
 -- if rvals is not string , ingore the cache
 function CachedEnforcer:enforce(...)
-    if not self.cacheEnabled then
+    if not self.cacheEnabled or not self.enabled then
         return Enforcer.enforce(self, ...)
     end
 

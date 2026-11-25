@@ -386,7 +386,8 @@ end
      * @param enable whether to enable the enforcer.
 ]]
 function CoreEnforcer:enableEnforce(enable)
-    self.enable = enable
+    self.enabled = enable
+    self:bumpPolicyVersion()
 end
 
 -- setLogger changes the current enforcer's logger.
@@ -460,7 +461,7 @@ function CoreEnforcer:enforceEx(...)
     end
 
     if not self.enabled then
-        return false
+        return true, {}
     end
     
     local functions = FunctionMap:new()

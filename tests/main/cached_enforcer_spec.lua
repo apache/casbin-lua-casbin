@@ -111,4 +111,22 @@ describe("Cached Enforcer tests", function ()
         assert.is.True(e:enforce("alice$$data", "x", "read"))
         assert.is.False(e:enforce("alice", "data$$x", "read"))
     end)
+
+    it("Test Cache with enableEnforce", function ()
+        local model  = path .. "/examples/basic_model.conf"
+        local policy  = path .. "/examples/basic_policy.csv"
+
+        local e = CachedEnforcer:new(model, policy)
+
+        assert.is.False(e:enforce("alice", "data2", "read"))
+        e:enableEnforce(false)
+        assert.is.True(e:enforce("alice", "data2", "read"))
+        e:enableEnforce(true)
+        assert.is.False(e:enforce("alice", "data2", "read"))
+
+        e:enableEnforce(false)
+        assert.is.True(e:enforce("bob", "data1", "read"))
+        e:enableEnforce(true)
+        assert.is.False(e:enforce("bob", "data1", "read"))
+    end)
 end)
