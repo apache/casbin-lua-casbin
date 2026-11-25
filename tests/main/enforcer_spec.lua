@@ -602,4 +602,33 @@ describe("Enforcer tests", function ()
         assert.is.True(e:enforce("guest", "/guest/test", "GET"))
         assert.is.False(e:enforce("guest", "/guest/test", "PUT"))
     end)
+
+    it("in operator binds tighter than && test", function ()
+        local modelText = [[
+            [request_definition]
+            r = sub, obj, act
+            [policy_definition]
+            p = sub, obj, act
+            [policy_effect]
+            e = some(where (p.eft == allow))
+            [matchers]
+            m = r.sub == p.sub && r.obj in ('data1', 'data2')
+        ]]
+
+        local e = Enforcer:newEnforcerFromText(modelText, "p, alice, any, read")
+        assert.is.True(e:enforce("alice", "data1", "read"))
+        assert.is.True(e:enforce("alice", "data2", "read"))
+        assert.is.False(e:enforce("alice", "data3", "read"))
+        assert.is.False(e:enforce("bob", "data1", "read"))
+        assert.is.False(e:enforce("bob", "data2", "read"))
+    end)
+
+    it("in operator on a function call test", function ()
+        local model  = path .. "/examples/keyget2_model.conf"
+        local e = Enforcer:newEnforcerFromText(io.open(model):read("*a"), "p, alice, /:resource, GET")
+        assert.is.True(e:enforce("alice", "/age", "GET"))
+        assert.is.True(e:enforce("alice", "/name", "GET"))
+        assert.is.False(e:enforce("alice", "/salary", "GET"))
+        assert.is.False(e:enforce("bob", "/age", "GET"))
+    end)
 end)

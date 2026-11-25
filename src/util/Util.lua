@@ -228,22 +228,136 @@ function Util.findAndReplaceEval(str, context)
     return m
 end
 
--- replaces [obj] in (obj1, obj2, ...) to obj == obj1 || obj == obj2 || ...
-function Util.replaceInOfMatcher(str)
-    local s = string.gsub(str, "([^%s]+)(%s+)in(%s+)%((.*)%)", function (a, _, _ , b)
-        local t = ""
-        local vals = Util.splitCommaDelimited(b)
-        for k, v in pairs(vals) do
-            t = t .. a .. " == " .. v
-            if k<#vals then
-                t = t .. " || "
-            else
-                t = t .. " "
+local function isIdentChar(c)
+    return c:match("[%w_%.]") ~= nil
+end
+
+-- matchingParen returns the index of the ")" closing the "(" at str[i], skipping quoted literals.
+local function matchingParen(str, i)
+    local depth = 0
+    while i <= #str do
+        local c = string.sub(str, i, i)
+        if c == '"' or c == "'" then
+            i = Util.stringLiteralEnd(str, i)
+        else
+            if c == "(" then
+                depth = depth + 1
+            elseif c == ")" then
+                depth = depth - 1
+                if depth == 0 then
+                    return i
+                end
             end
+            i = i + 1
         end
-        return t
-    end)
-    return s
+    end
+    return nil
+end
+
+-- splitInValues splits a list on its top-level commas, keeping quoted literals and nested calls intact.
+local function splitInValues(str)
+    local vals = {}
+    local depth = 0
+    local start = 1
+    local i = 1
+    while i <= #str do
+        local c = string.sub(str, i, i)
+        if c == '"' or c == "'" then
+            i = Util.stringLiteralEnd(str, i)
+        else
+            if c == "(" then
+                depth = depth + 1
+            elseif c == ")" then
+                depth = depth - 1
+            elseif c == "," and depth == 0 then
+                table.insert(vals, Util.trim(string.sub(str, start, i - 1)))
+                start = i + 1
+            end
+            i = i + 1
+        end
+    end
+    local last = Util.trim(string.sub(str, start))
+    if last ~= "" or #vals > 0 then
+        table.insert(vals, last)
+    end
+    return vals
+end
+
+-- findInOperator finds the first "operand in (...)" outside quoted literals and returns the
+-- start of the operand, and the positions of the "(" and ")" around the list.
+local function findInOperator(str)
+    local stack = {}
+    local operandStart
+    local identStart, identEnd
+    local i = 1
+    while i <= #str do
+        local c = string.sub(str, i, i)
+        if c == '"' or c == "'" then
+            operandStart = i
+            i = Util.stringLiteralEnd(str, i)
+        elseif isIdentChar(c) then
+            local s = i
+            while i <= #str and isIdentChar(string.sub(str, i, i)) do
+                i = i + 1
+            end
+            if string.sub(str, s, i - 1) == "in" and operandStart then
+                local j = i
+                while string.sub(str, j, j):match("^%s$") do
+                    j = j + 1
+                end
+                if string.sub(str, j, j) == "(" then
+                    local close = matchingParen(str, j)
+                    if close then
+                        return operandStart, j, close
+                    end
+                end
+            end
+            operandStart = s
+            identStart, identEnd = s, i - 1
+        elseif c == "(" then
+            if identEnd == i - 1 then
+                table.insert(stack, identStart)
+            else
+                table.insert(stack, i)
+            end
+            operandStart = nil
+            i = i + 1
+        elseif c == ")" then
+            operandStart = table.remove(stack)
+            i = i + 1
+        else
+            if not c:match("%s") then
+                operandStart = nil
+            end
+            i = i + 1
+        end
+    end
+    return nil
+end
+
+-- replaces obj in (obj1, obj2, ...) to (obj == obj1 || obj == obj2 || ...)
+-- The expansion is parenthesized so that "in" keeps binding tighter than && and ||.
+function Util.replaceInOfMatcher(str)
+    while true do
+        local operandStart, open, close = findInOperator(str)
+        if not operandStart then
+            return str
+        end
+
+        local operand = Util.trim(string.sub(str, operandStart, open - 1))
+        operand = Util.trim(string.sub(operand, 1, -3))
+        local vals = splitInValues(string.sub(str, open + 1, close - 1))
+        local terms = {}
+        for _, v in ipairs(vals) do
+            table.insert(terms, operand .. " == " .. v)
+        end
+        local expanded = "(false)"
+        if #terms > 0 then
+            expanded = "(" .. table.concat(terms, " || ") .. ")"
+        end
+
+        str = string.sub(str, 1, operandStart - 1) .. expanded .. string.sub(str, close + 1)
+    end
 end
 
 -- returns deep (recursive) copy of a table (values only)
