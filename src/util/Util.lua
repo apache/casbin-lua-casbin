@@ -95,9 +95,20 @@ function Util.escapeAssertion(str)
 end
 
 --Removes the comments starting with # in the text.
+--A # inside a quoted string literal is part of the literal.
 function Util.removeComments(str)
-    local i, _ = string.find(str, "#")
-    if i then str = str:sub(1,i-1) end
+    local i = 1
+    while i <= #str do
+        local c = string.sub(str, i, i)
+        if c == "#" then
+            str = string.sub(str, 1, i - 1)
+            break
+        elseif c == '"' or c == "'" then
+            i = Util.stringLiteralEnd(str, i)
+        else
+            i = i + 1
+        end
+    end
 
     return Util.trim(str)
 end
