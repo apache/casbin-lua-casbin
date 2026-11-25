@@ -45,18 +45,53 @@ function Util.splitCommaDelimited(str)
     return t
 end
 
---Escapes the dots in the assertion, because the expression evaluation doesn't support such variable names.
-function Util.escapeAssertion(str)
-    if string.sub(str, 1, 1) == "r" or string.sub(str, 1, 1) == "p" then
-        str = str:gsub("%.","_", 1)
+-- stringLiteralEnd returns the index just past the string literal that opens at str[i].
+-- A backslash escapes the next character, as in the expression evaluator, so the
+-- literal ends at the next unescaped matching quote, or at the end of str when it is
+-- not closed.
+function Util.stringLiteralEnd(str, i)
+    local quote = string.sub(str, i, i)
+    local j = i + 1
+    while j <= #str do
+        local c = string.sub(str, j, j)
+        if c == "\\" and j < #str then
+            j = j + 1
+        elseif c == quote then
+            return j + 1
+        end
+        j = j + 1
     end
-    str = str:gsub("[^%w]+r%.", function (a)
-        return string.sub(a, 1, -3).."r_"
-    end)
-    str = str:gsub("[^%w]+p%.", function (a)
-        return string.sub(a, 1, -3).."p_"
-    end)
-    return str
+    return #str + 1
+end
+
+local function escapeAssertionUnquoted(str)
+    if str == "" then
+        return str
+    end
+    str = (" " .. str):gsub("([^%w])([rp])%.", "%1%2_")
+    return string.sub(str, 2)
+end
+
+--Escapes the dots in the assertion, because the expression evaluation doesn't support such variable names.
+--Quoted string literals are kept as they are.
+function Util.escapeAssertion(str)
+    local res = {}
+    local start = 1
+    local i = 1
+    while i <= #str do
+        local c = string.sub(str, i, i)
+        if c == '"' or c == "'" then
+            local e = Util.stringLiteralEnd(str, i)
+            table.insert(res, escapeAssertionUnquoted(string.sub(str, start, i - 1)))
+            table.insert(res, string.sub(str, i, e - 1))
+            start = e
+            i = e
+        else
+            i = i + 1
+        end
+    end
+    table.insert(res, escapeAssertionUnquoted(string.sub(str, start)))
+    return table.concat(res)
 end
 
 --Removes the comments starting with # in the text.
